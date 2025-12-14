@@ -4,29 +4,34 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Carrega variáveis de ambiente baseadas no modo atual (development/production)
-  const env = loadEnv(mode, (process as any).cwd(), '');
+  const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    // Garante que os caminhos dos assets sejam relativos (./) e não absolutos (/)
-    // Isso resolve o problema de tela preta/branca em produção/Docker onde a raiz pode não ser '/'
-    base: './',
-    
+    base: './', 
     plugins: [react()],
     define: {
-      // Previne o erro "process is not defined" e garante string vazia se undefined
+      // Injeta a API Key de forma segura. Se não existir, injeta string vazia.
       'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
-      // Define um objeto vazio para outras chamadas process.env para evitar crash
+      // Evita erro de 'process is not defined' em bibliotecas legadas
       'process.env': {}
     },
     server: {
-      host: true, // Permite acesso externo (útil para Docker)
+      host: true,
       port: 3000,
-      allowedHosts: true // Permite qualquer host (útil para túneis ou IPs diretos)
+      allowedHosts: true
     },
     build: {
       outDir: 'dist',
-      sourcemap: false
+      sourcemap: false,
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+            // Removemos @google/genai dos chunks manuais obrigatórios para evitar erros de load se não usado
+          }
+        }
+      }
     }
   };
 });

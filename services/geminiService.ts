@@ -2,24 +2,27 @@
 import { GoogleGenAI } from "@google/genai";
 import { PRODUCT_CONTEXT } from "../constants";
 
-// Inicialização Segura: Verifica se a chave existe antes de tentar criar a instância
-// Isso previne que o site trave (Tela Preta) se a variável de ambiente não estiver definida.
+// Obtém a chave da variável de ambiente injetada pelo Vite
+// Se não houver chave, a variável será uma string vazia ou undefined
 const apiKey = process.env.API_KEY;
+
 let ai: any = null;
 
-if (apiKey && apiKey !== 'undefined' && apiKey !== '') {
+// Inicialização condicional: Só cria a instância se houver uma chave válida
+if (apiKey && apiKey.length > 10 && apiKey !== 'undefined') {
     try {
         ai = new GoogleGenAI({ apiKey: apiKey });
     } catch (error) {
-        console.error("Erro ao inicializar Gemini AI (Chave inválida?):", error);
+        console.warn("Gemini AI: Falha na inicialização silenciosa.", error);
     }
+} else {
+    console.log("Gemini AI: Modo offline (Sem API Key).");
 }
 
 export const getStylingAdvice = async (userQuery: string): Promise<string> => {
-  // Se a IA não foi inicializada (sem chave), retorna mensagem amigável sem quebrar o app
+  // Fallback imediato se a IA não estiver ativa
   if (!ai) {
-      console.warn("Tentativa de uso da IA sem API KEY configurada.");
-      return "O estilista virtual está em manutenção no momento (Configuração de API pendente). Por favor, navegue pelas categorias!";
+      return "O estilista virtual está offline no momento. Por favor, navegue pelas categorias para ver nossas novidades!";
   }
 
   try {
@@ -45,9 +48,9 @@ export const getStylingAdvice = async (userQuery: string): Promise<string> => {
       }
     });
 
-    return response.text || "Desculpe, estou tendo um bloqueio criativo agora. Tente novamente!";
+    return response.text || "Não consegui formular uma dica agora. Tente novamente!";
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Ocorreu um erro ao consultar nosso estilista virtual. Verifique sua conexão.";
+    return "Ocorreu um erro de conexão com o estilista. Tente novamente mais tarde.";
   }
 };
