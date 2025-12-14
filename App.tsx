@@ -12,10 +12,9 @@ import SuperAdminDashboard from './components/saas/SuperAdminDashboard';
 // --- ROUTER LOGIC ---
 const MainRouter: React.FC = () => {
     const { setCurrentTenant, user, saasLogout } = useStore();
-    const [view, setView] = useState<'store' | 'saas'>('saas');
+    const [view, setView] = useState<'store' | 'saas'>('store'); // PADRÃO ALTERADO PARA 'store'
     
     // Roteamento Interno para SaaS (Login vs Registro)
-    // Usar estado em vez de URL garante estabilidade em ambientes de preview
     const [saasRoute, setSaasRoute] = useState<'login' | 'register'>('login');
     
     // Estado do Modo Admin (Quando visualizando uma loja específica)
@@ -25,19 +24,25 @@ const MainRouter: React.FC = () => {
     const [superAdminView, setSuperAdminView] = useState<'dashboard' | 'store'>('dashboard');
 
     useEffect(() => {
-        // Verifica parâmetros de URL apenas para seleção de loja (tenant)
+        // Verifica parâmetros de URL
         const params = new URLSearchParams(window.location.search);
         const storeSlug = params.get('store'); // ?store=slug
+        const mode = params.get('mode'); // ?mode=admin
 
         if (storeSlug) {
             setCurrentTenant(storeSlug);
             setView('store');
-        } else {
+        } else if (mode === 'admin') {
             setView('saas');
+        } else {
+            // COMPORTAMENTO PADRÃO: Abrir a loja demo 'abn' se nada for especificado
+            // Isso evita a tela preta de login para quem só quer ver o front
+            setCurrentTenant('abn');
+            setView('store');
         }
     }, []);
 
-    // --- Navegação SaaS (Domínio Raiz) ---
+    // --- Navegação SaaS (Painel Admin) ---
     if (view === 'saas') {
         // Rotas Autenticadas
         if (user) {
@@ -47,20 +52,22 @@ const MainRouter: React.FC = () => {
                         onEnterMyStore={() => {
                             setCurrentTenant('uss'); // Força contexto para loja USS
                             setSuperAdminView('store');
+                            setView('store');
                         }} 
-                        onSelectTenant={() => setSuperAdminView('store')}
+                        onSelectTenant={() => {
+                            setSuperAdminView('store');
+                            setView('store');
+                        }}
                     />;
                 }
-                // Super Admin em Modo Loja - Reusa AdminLayout com saída customizada
                 return <AdminLayout onExit={() => setSuperAdminView('dashboard')} />;
             }
             if (user.role === 'TENANT_ADMIN') {
-                // Se for Admin da Loja, mostra o painel da loja dele imediatamente
                 return <AdminLayout onExit={saasLogout} />;
             }
         }
 
-        // Rotas Públicas SaaS (Login / Registro) com navegação via estado
+        // Rotas Públicas SaaS
         if (saasRoute === 'register') {
             return <SaasRegister onLoginClick={() => setSaasRoute('login')} />;
         }
@@ -68,12 +75,19 @@ const MainRouter: React.FC = () => {
         return <SaasLogin onRegisterClick={() => setSaasRoute('register')} />;
     }
 
-    // --- Visualização da Loja (Para clientes finais via URL ?store=xyz) ---
+    // --- Visualização da Loja (Cliente Final) ---
     if (isAdminMode) {
         return <AdminLayout onExit={() => setIsAdminMode(false)} />;
     }
 
-    return <PublicStore onAdminEnter={() => setIsAdminMode(true)} />;
+    return <PublicStore onAdminEnter={() => {
+        // Se já estiver logado como admin, vai pro painel, senão vai pro login
+        if (user) {
+            setIsAdminMode(true);
+        } else {
+            setView('saas');
+        }
+    }} />;
 };
 
 const App: React.FC = () => {
