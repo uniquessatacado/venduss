@@ -59,6 +59,7 @@ export interface AbandonedCart {
 }
 
 export interface AppSettings {
+  theme: 'light' | 'dark'; // NEW: Store Theme Preference
   showTicker: boolean;
   showFlashSale: boolean;
   showAiAssistant: boolean;

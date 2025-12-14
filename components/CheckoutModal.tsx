@@ -4,7 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { X, Truck, Store, Bike, MapPin, CreditCard, Sparkles, Wallet, ArrowLeft, Mail, Loader, CheckCircle } from 'lucide-react';
 import UpsellModal from './UpsellModal';
 import RouletteModal from './RouletteModal';
-import { Prize, Address, Order } from '../types';
+import { Prize, Address, Order, UpsellOffer } from '../types';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -54,13 +54,14 @@ const validateCPF = (cpf: string) => {
 };
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
-  const { clientCart, settings, addOrder, clearClientCart, currentUser, addToClientCart, underwearSize, loginByEmail } = useStore();
+  const { clientCart, settings, addOrder, clearClientCart, currentUser, addToClientCart, underwearSize, loginByEmail, upsellOffers } = useStore();
   
-  const [step, setStep] = useState<CheckoutStep>('upsell');
+  const [step, setStep] = useState<CheckoutStep>('shipping');
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [notes, setNotes] = useState('');
   const [useBalance, setUseBalance] = useState(true);
+  const [checkoutUpsell, setCheckoutUpsell] = useState<UpsellOffer | null>(null);
   
   // Identification State
   const [emailInput, setEmailInput] = useState('');
@@ -97,23 +98,47 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     // Reset on open
     if (isOpen) {
-      setStep('upsell');
       setShippingMethod(null);
       setPaymentMethod(null);
       setNotes('');
       setEmailInput('');
+      
+      // Determine if there is a relevant upsell offer
+      // We look for any active offer that matches categories/subcategories in the cart
+      const foundOffer = upsellOffers.find(o => 
+          o.active && 
+          clientCart.some(item => 
+              (o.triggerCategoryIds?.includes(item.categoryId)) || 
+              (o.triggerSubcategories?.includes(item.subcategoryId || ''))
+          )
+      );
+
+      if (foundOffer) {
+          setCheckoutUpsell(foundOffer);
+          setStep('upsell');
+      } else {
+          setCheckoutUpsell(null);
+          setStep('shipping');
+      }
     }
   }, [isOpen]);
 
   const handleUpsellAccept = () => {
-    addToClientCart({
-      id: 'kit-upsell', name: `Kit 3 Cuecas ${underwearSize} (Oferta)`,
-      price: 49.90, category: 'Accessories', image: 'https://picsum.photos/300/200?random=underwear',
-      costPrice: 20.00,
-      categoryId: 'upsell',
-      galleryImages: [],
-      variants: []
-    });
+    if (checkoutUpsell) {
+        // Simple accept logic: add a generic item representing the offer
+        // Ideally this would add specific products, but for now we add the offer item
+        addToClientCart({
+            id: `upsell-${checkoutUpsell.id}`,
+            name: `${checkoutUpsell.title} (Oferta)`,
+            price: checkoutUpsell.promoPrice,
+            category: 'Oferta',
+            image: checkoutUpsell.bannerImage,
+            costPrice: 0,
+            categoryId: 'upsell',
+            galleryImages: [],
+            variants: []
+        });
+    }
     setStep('shipping');
   };
 
@@ -279,7 +304,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
       case 'upsell':
         return (
           <div className="bg-zinc-950">
-            <UpsellModal isOpen={true} onAccept={handleUpsellAccept} onClose={() => setStep('shipping')} />
+            <UpsellModal 
+              isOpen={true} 
+              offer={checkoutUpsell} 
+              onAccept={handleUpsellAccept} 
+              onClose={() => setStep('shipping')} 
+            />
           </div>
         );
       case 'shipping':

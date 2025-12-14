@@ -16,9 +16,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onRegisterClick }) => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(''); // Limpa erro anterior
     const user = await saasLogin(email, password);
     if (!user) {
-        setError('Credenciais inválidas. Tente ussloja@gmail.com / 137900');
+        setError('E-mail ou senha incorretos.');
     }
   };
 
@@ -33,7 +34,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onRegisterClick }) => {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Lock className="text-purple-500"/> Acesso ao Painel</h2>
             
-            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm mb-4">{error}</div>}
+            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm mb-4 font-medium text-center">{error}</div>}
 
             <form onSubmit={handleLogin} className="space-y-4">
                 <div>

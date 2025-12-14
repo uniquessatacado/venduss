@@ -5,6 +5,7 @@ import { PRODUCTS, NAMES, CITIES } from '../constants';
 
 // --- DEFAULT SETTINGS FACTORY ---
 const createDefaultSettings = (storeName: string): AppSettings => ({
+    theme: 'light', // Default to Clean Mode
     showTicker: true, showFlashSale: false, showAiAssistant: true, showSocialProof: true,
     
     // Social Proof Defaults

@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { ToggleLeft, ToggleRight, Percent, Upload, Image as ImageIcon, Trash2, User, Save, MapPin, Plus, X } from 'lucide-react';
+import { ToggleLeft, ToggleRight, Percent, Upload, Image as ImageIcon, Trash2, User, Save, MapPin, Plus, X, Sun, Moon } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
   const { settings, updateSettings, currentTenant, updateTenantLogo, user, updateUser } = useStore();
@@ -68,6 +68,38 @@ const AdminSettings: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       <h2 className="text-2xl font-bold">Ajustes da Loja</h2>
       
+      {/* 0. THEME SETTINGS (NEW) */}
+      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+          <h4 className="font-bold text-white mb-6 flex items-center gap-2"><Sun size={20} className="text-yellow-500"/> Aparência da Loja</h4>
+          <div className="flex gap-4">
+              <button 
+                onClick={() => updateSettings({ theme: 'light' })}
+                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-3 transition-all ${settings.theme === 'light' ? 'bg-white border-white' : 'bg-black border-zinc-700 hover:border-zinc-500'}`}
+              >
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                      <Sun className="text-yellow-500" size={24} />
+                  </div>
+                  <div className="text-center">
+                      <p className={`font-bold ${settings.theme === 'light' ? 'text-black' : 'text-white'}`}>Modo Clean (Claro)</p>
+                      <p className={`text-xs ${settings.theme === 'light' ? 'text-gray-500' : 'text-zinc-500'}`}>Visual moderno, fundo branco, estilo app.</p>
+                  </div>
+              </button>
+
+              <button 
+                onClick={() => updateSettings({ theme: 'dark' })}
+                className={`flex-1 p-4 rounded-xl border flex flex-col items-center gap-3 transition-all ${settings.theme === 'dark' ? 'bg-zinc-800 border-zinc-500' : 'bg-black border-zinc-700 hover:border-zinc-500'}`}
+              >
+                  <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center border border-zinc-700">
+                      <Moon className="text-purple-500" size={24} />
+                  </div>
+                  <div className="text-center">
+                      <p className="font-bold text-white">Modo Dark (Original)</p>
+                      <p className="text-xs text-zinc-500">Visual clássico, fundo preto, estilo noturno.</p>
+                  </div>
+              </button>
+          </div>
+      </div>
+
       {/* 1. ADMIN PROFILE (Meus Dados) */}
       <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
           <h4 className="font-bold text-white mb-6 flex items-center gap-2"><User size={20} className="text-blue-500"/> Meus Dados (Admin)</h4>
