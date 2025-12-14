@@ -1,3 +1,4 @@
+
 {
   "name": "venduss-store",
   "private": true,
@@ -9,15 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0",
     "lucide-react": "^0.294.0",
     "@google/genai": "^1.33.0",
     "pg": "^8.11.3"
   },
   "devDependencies": {
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.2.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.0"

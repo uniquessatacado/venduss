@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   // Carrega variáveis de ambiente baseadas no modo atual (development/production)
   // O terceiro argumento '' carrega todas as variáveis, não apenas as com prefixo VITE_
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, (process as any).cwd(), '');
 
   return {
     // Garante que os caminhos dos assets sejam relativos (./) e não absolutos (/)
