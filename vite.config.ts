@@ -5,7 +5,6 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Carrega variáveis de ambiente baseadas no modo atual (development/production)
-  // O terceiro argumento '' carrega todas as variáveis, não apenas as com prefixo VITE_
   const env = loadEnv(mode, (process as any).cwd(), '');
 
   return {
@@ -15,14 +14,15 @@ export default defineConfig(({ mode }) => {
     
     plugins: [react()],
     define: {
-      // Previne o erro "process is not defined" no navegador substituindo pelo valor em tempo de build
-      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      // Previne o erro "process is not defined" e garante string vazia se undefined
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
       // Define um objeto vazio para outras chamadas process.env para evitar crash
       'process.env': {}
     },
     server: {
       host: true, // Permite acesso externo (útil para Docker)
-      port: 3000
+      port: 3000,
+      allowedHosts: true // Permite qualquer host (útil para túneis ou IPs diretos)
     },
     build: {
       outDir: 'dist',

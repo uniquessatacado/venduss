@@ -1,9 +1,27 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { PRODUCT_CONTEXT } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Inicialização Segura: Verifica se a chave existe antes de tentar criar a instância
+// Isso previne que o site trave (Tela Preta) se a variável de ambiente não estiver definida.
+const apiKey = process.env.API_KEY;
+let ai: any = null;
+
+if (apiKey && apiKey !== 'undefined' && apiKey !== '') {
+    try {
+        ai = new GoogleGenAI({ apiKey: apiKey });
+    } catch (error) {
+        console.error("Erro ao inicializar Gemini AI (Chave inválida?):", error);
+    }
+}
 
 export const getStylingAdvice = async (userQuery: string): Promise<string> => {
+  // Se a IA não foi inicializada (sem chave), retorna mensagem amigável sem quebrar o app
+  if (!ai) {
+      console.warn("Tentativa de uso da IA sem API KEY configurada.");
+      return "O estilista virtual está em manutenção no momento (Configuração de API pendente). Por favor, navegue pelas categorias!";
+  }
+
   try {
     const systemInstruction = `
       Você é um consultor de estilo de moda especialista e moderno para a loja 'Lumina Fashion'.

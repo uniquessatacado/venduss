@@ -5,7 +5,7 @@ import { PRODUCTS, NAMES, CITIES } from '../constants';
 
 // --- DEFAULT SETTINGS FACTORY ---
 const createDefaultSettings = (storeName: string): AppSettings => ({
-    theme: 'light', // MUDANÇA: Padrão Light (Clean/Claro)
+    theme: 'light', // Default to Clean Mode
     showTicker: true, showFlashSale: false, showAiAssistant: true, showSocialProof: true,
     
     // Social Proof Defaults
@@ -107,18 +107,16 @@ const INITIAL_PRODUCTS = PRODUCTS.map(p => ({
 }));
 
 const INITIAL_CATEGORIES: Category[] = [
-  { id: '1', tenantId: ABN_ID, name: 'Novidades', image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=200&auto=format&fit=crop', subcategories: [] },
-  { id: '2', tenantId: ABN_ID, name: 'Camisetas', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=200&auto=format&fit=crop', subcategories: ['Oversized', 'Slim', 'Estampada'] },
-  { id: '3', tenantId: ABN_ID, name: 'Calças', image: 'https://images.unsplash.com/photo-1542272617-08f086303294?q=80&w=200&auto=format&fit=crop', subcategories: ['Cargo', 'Jeans', 'Moletom'] },
-  { id: '4', tenantId: ABN_ID, name: 'Tênis', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=200&auto=format&fit=crop', subcategories: ['Casual', 'Esportivo'] },
-  { id: '5', tenantId: ABN_ID, name: 'Acessórios', image: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?q=80&w=200&auto=format&fit=crop', subcategories: ['Bonés', 'Meias', 'Bolsas'] },
-  { id: '6', tenantId: ABN_ID, name: 'Ofertas', image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=200&auto=format&fit=crop', subcategories: [] },
+  { id: '1', tenantId: ABN_ID, name: 'New In', image: 'https://picsum.photos/100/100?random=10', subcategories: [] },
+  { id: '2', tenantId: ABN_ID, name: 'T-Shirts', image: 'https://picsum.photos/100/100?random=11', subcategories: ['Oversized', 'Slim', 'Estampada'] },
+  { id: '3', tenantId: ABN_ID, name: 'Calças', image: 'https://picsum.photos/100/100?random=12', subcategories: ['Cargo', 'Jeans', 'Moletom'] },
+  { id: '4', tenantId: ABN_ID, name: 'Acessórios', image: 'https://picsum.photos/100/100?random=13', subcategories: ['Bonés', 'Meias', 'Bolsas'] },
 ];
 
 const INITIAL_BRANDS: Brand[] = [{id: '1', tenantId: ABN_ID, name: 'ABN Própria'}, {id: '2', tenantId: ABN_ID, name: 'Nike'}, {id: '3', tenantId: ABN_ID, name: 'Adidas'}];
 const INITIAL_COLORS: Color[] = [{id: '1', tenantId: ABN_ID, name: 'Preto', hex: '#000000'}, {id: '2', tenantId: ABN_ID, name: 'Branco', hex: '#ffffff'}, {id: '3', tenantId: ABN_ID, name: 'Azul Marinho', hex: '#000080'}];
 const INITIAL_SIZE_GRIDS: SizeGrid[] = [{id: '1', tenantId: ABN_ID, name: 'Padrão Adulto', sizes: ['P', 'M', 'G', 'GG']}];
-const INITIAL_BANNERS: Banner[] = [{ id: '1', tenantId: ABN_ID, type: 'image', url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop', active: true }];
+const INITIAL_BANNERS: Banner[] = [{ id: '1', tenantId: ABN_ID, type: 'image', url: 'https://picsum.photos/1200/800?random=99', active: true }];
 
 // --- INTERFACES ---
 
