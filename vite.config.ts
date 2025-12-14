@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
+    // Garante que os caminhos dos assets sejam relativos (./) e não absolutos (/)
+    // Isso resolve o problema de tela preta/branca em produção/Docker
+    base: './',
+    
     plugins: [react()],
     define: {
       // Previne o erro "process is not defined" no navegador substituindo pelo valor em tempo de build
