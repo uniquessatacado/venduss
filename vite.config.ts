@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     // Garante que os caminhos dos assets sejam relativos (./) e não absolutos (/)
-    // Isso resolve o problema de tela preta/branca em produção/Docker
+    // Isso resolve o problema de tela preta/branca em produção/Docker onde a raiz pode não ser '/'
     base: './',
     
     plugins: [react()],
