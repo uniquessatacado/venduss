@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { LayoutDashboard, ShoppingCart, Users, Settings, Package, LogOut, Menu as MenuIcon, X, Image as ImageIcon, Gift, Truck, CreditCard, Star, DollarSign, Tag, Megaphone, BarChart3, Store, Upload, Shield, Eye, Link, Copy, Check, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Users, Settings, Package, LogOut, Menu as MenuIcon, X, Image as ImageIcon, Gift, Truck, CreditCard, Star, DollarSign, Tag, Megaphone, BarChart3, Store, Upload, Shield, Eye, Link, Copy, Check, ArrowLeft, Disc, MessageCircle, ShoppingBag } from 'lucide-react';
 import PublicStore from '../PublicStore'; // Import the store component
 import AdminDashboard from './AdminDashboard';
 import AdminPOS from './AdminPOS';
@@ -17,21 +17,28 @@ import AdminAnalytics from './AdminAnalytics';
 import AdminShipping from './AdminShipping';
 import AdminPayments from './AdminPayments';
 import AdminRaffles from './AdminRaffles';
+import AdminRoulette from './AdminRoulette'; 
+import AdminSupport from './AdminSupport'; 
+import AdminUpsells from './AdminUpsells'; // New Component
+import AdminAbandoned from './AdminAbandoned'; // New Component
 
 interface AdminLayoutProps {
   onExit: () => void;
 }
 
-type Tab = 'live_preview' | 'dashboard' | 'analytics' | 'pos' | 'products' | 'customers' | 'settings' | 'banners' | 'kits' | 'shipping' | 'payments' | 'raffles' | 'finance' | 'variables' | 'promotions';
+type Tab = 'live_preview' | 'dashboard' | 'analytics' | 'pos' | 'products' | 'customers' | 'settings' | 'banners' | 'kits' | 'shipping' | 'payments' | 'raffles' | 'finance' | 'variables' | 'promotions' | 'roulette' | 'support' | 'upsells' | 'abandoned';
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
-  const { currentTenant, updateTenantLogo, user } = useStore();
+  const { currentTenant, updateTenantLogo, user, supportMessages } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   
   // Check if it's the Super Admin browsing
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  
+  // Count unread support messages
+  const unreadMessages = user ? supportMessages.filter(m => m.receiverId === user.id && !m.read).length : 0;
   
   // Logo Upload State
   const [showLogoPopup, setShowLogoPopup] = useState(false);
@@ -87,11 +94,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
       ]
     },
     {
+      title: 'Marketing & Engajamento',
+      items: [
+        { id: 'upsells', icon: ArrowLeft, label: 'Upsell (Pop-ups)' },
+        { id: 'abandoned', icon: ShoppingBag, label: 'Carrinhos Abandonados' },
+        { id: 'roulette', icon: Disc, label: 'Roleta Premiada' },
+        { id: 'raffles', icon: Star, label: 'Sorteios' },
+      ]
+    },
+    {
       title: 'Configurações',
       items: [
         { id: 'shipping', icon: Truck, label: 'Entregas' },
         { id: 'payments', icon: CreditCard, label: 'Pagamentos' },
-        { id: 'raffles', icon: Star, label: 'Sorteios' },
         { id: 'settings', icon: Settings, label: 'Ajustes' },
       ]
     }
@@ -137,6 +152,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
       case 'shipping': return <AdminShipping />;
       case 'payments': return <AdminPayments />;
       case 'raffles': return <AdminRaffles />;
+      case 'roulette': return <AdminRoulette />;
+      case 'support': return <AdminSupport />;
+      case 'upsells': return <AdminUpsells />;
+      case 'abandoned': return <AdminAbandoned />;
       case 'settings': return <AdminSettings />;
       default: return <div className="text-center p-8 bg-zinc-900 rounded-xl border border-zinc-800">Página de <span className="font-bold">{activeTab}</span> em construção.</div>;
     }
@@ -147,10 +166,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
     setIsMobileMenuOpen(false); // Close drawer if open
   };
 
-  const NavItem = ({ tab, icon: Icon, label, highlight = false }: { tab: Tab, icon: any, label: string, highlight?: boolean }) => (
+  const NavItem = ({ tab, icon: Icon, label, highlight = false, badge = 0 }: { tab: Tab, icon: any, label: string, highlight?: boolean, badge?: number }) => (
     <button
       onClick={() => handleTabChange(tab)}
-      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
+      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
         activeTab === tab 
           ? 'bg-white text-black font-bold shadow-lg' 
           : highlight 
@@ -158,8 +177,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
             : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
       }`}
     >
-      <Icon size={20} />
-      <span>{label}</span>
+      <div className="flex items-center gap-3">
+          <Icon size={20} />
+          <span>{label}</span>
+      </div>
+      {badge > 0 && (
+          <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>
+      )}
     </button>
   );
 
@@ -244,11 +268,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
           <NavItem tab="banners" icon={ImageIcon} label="Banners" />
           <NavItem tab="kits" icon={Gift} label="Ofertas (Kits)" />
           <div className="h-px bg-zinc-800 my-4" />
+          <p className="px-4 py-2 text-xs text-zinc-500 uppercase font-bold tracking-wider">Marketing</p>
+          <NavItem tab="upsells" icon={ArrowLeft} label="Upsell (Pop-ups)" />
+          <NavItem tab="abandoned" icon={ShoppingBag} label="Carrinhos Abandonados" />
+          <NavItem tab="roulette" icon={Disc} label="Roleta Premiada" highlight={true} />
+          <NavItem tab="raffles" icon={Star} label="Sorteios" />
+          <div className="h-px bg-zinc-800 my-4" />
           <p className="px-4 py-2 text-xs text-zinc-500 uppercase font-bold tracking-wider">Configurações</p>
           <NavItem tab="shipping" icon={Truck} label="Entregas" />
           <NavItem tab="payments" icon={CreditCard} label="Pagamentos" />
-          <NavItem tab="raffles" icon={Star} label="Sorteios" />
           <NavItem tab="settings" icon={Settings} label="Ajustes" />
+          <div className="h-px bg-zinc-800 my-4" />
+          <NavItem tab="support" icon={MessageCircle} label="Fale com a Venduss" badge={unreadMessages} />
         </nav>
 
         <div className="mt-auto pt-4 border-t border-zinc-800">
@@ -265,7 +296,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
             <button onClick={() => handleTabChange('live_preview')} className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded border border-green-500/30 flex items-center gap-1">
                 <Eye size={12} /> Ver Loja
             </button>
-            <div className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400 border border-zinc-700 flex items-center"> Menu </div>
+            <div className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400 border border-zinc-700 flex items-center relative" onClick={() => setIsMobileMenuOpen(true)}>
+                 Menu {unreadMessages > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>}
+            </div>
         </div>
       </header>
 
@@ -290,8 +323,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
             <MobileNavItem tab="pos" icon={ShoppingCart} label="PDV" />
             <MobileNavItem tab="finance" icon={DollarSign} label="Caixa" />
             <MobileNavItem tab="products" icon={Package} label="Prod." />
-            <button onClick={() => setIsMobileMenuOpen(true)} className={`flex flex-col items-center justify-center p-2 transition-all ${['settings','categories','banners','kits', 'shipping', 'payments', 'raffles', 'variables', 'promotions', 'analytics'].includes(activeTab) ? 'text-white' : 'text-zinc-500'}`}>
-              <div className="p-1.5 rounded-full mb-1 bg-transparent"> <MenuIcon size={20} /> </div>
+            <button onClick={() => setIsMobileMenuOpen(true)} className={`flex flex-col items-center justify-center p-2 transition-all ${['settings','categories','banners','kits', 'shipping', 'payments', 'raffles', 'variables', 'promotions', 'analytics', 'roulette'].includes(activeTab) ? 'text-white' : 'text-zinc-500'}`}>
+              <div className="p-1.5 rounded-full mb-1 bg-transparent relative"> 
+                  <MenuIcon size={20} /> 
+                  {unreadMessages > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>}
+              </div>
               <span className="text-[10px] font-medium">Mais</span>
             </button>
           </nav>
@@ -315,6 +351,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onExit }) => {
 
             <button onClick={() => handleTabChange('live_preview')} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold mb-6 flex items-center justify-center gap-2">
                 <Eye size={20} /> Minha Loja Agora
+            </button>
+
+            <button 
+                onClick={() => handleTabChange('support')}
+                className="w-full bg-zinc-800 text-white py-3 rounded-xl font-bold mb-6 flex items-center justify-center gap-2 relative"
+            >
+                <MessageCircle size={20} /> Fale com a Venduss
+                {unreadMessages > 0 && <span className="bg-red-500 text-white text-[10px] px-2 rounded-full absolute top-2 right-2">{unreadMessages}</span>}
             </button>
 
             {/* FULL MENU LIST */}

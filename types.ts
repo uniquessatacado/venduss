@@ -16,12 +16,64 @@ export interface SocialProofLocation {
   percentage: number; // 0 to 100
 }
 
+export interface RouletteSegment {
+  id: string;
+  emoji: string;
+  label: string; // What the user sees if they win
+  type: 'win' | 'loss';
+  color: string; // Hex color for the slice
+}
+
+export interface UpsellOffer {
+  id: string;
+  tenantId: string;
+  active: boolean;
+  title: string;
+  bannerImage: string; 
+  
+  // Triggers
+  triggerCategoryIds: string[]; // Still useful for quick filtering
+  triggerSubcategories: string[]; // NEW: Specific subcategories that trigger this
+  
+  // Logic
+  offerType: 'automatic' | 'manual';
+  specificProductIds?: string[]; // For Manual
+  sourceCategoryId?: string; // For Automatic
+  sourceSubcategory?: string; // For Automatic
+  
+  productCount: number; 
+  promoPrice: number; 
+  originalPrice: number; 
+  // sizeRequired removed as it is now implicit based on customer profile logic
+}
+
+export interface AbandonedCart {
+  id: string;
+  tenantId: string;
+  customerPhone: string;
+  customerName?: string; // Optional if we only have phone
+  items: CartItem[];
+  total: number;
+  updatedAt: string;
+  recovered: boolean;
+}
+
 export interface AppSettings {
   showTicker: boolean;
   showFlashSale: boolean;
   showAiAssistant: boolean;
   showSocialProof: boolean;
   
+  // Roulette Configuration
+  rouletteEnabled: boolean;
+  rouletteMinTotal: number; // Minimum cart value to trigger roulette
+  rouletteSegments: RouletteSegment[]; // Fixed 8 segments
+  rouletteRigging?: {
+      active: boolean;
+      minOrderValue: number;
+      forceSegmentId: string; // ID of the segment to land on if condition met
+  };
+
   // Social Proof Configuration
   socialProofMinTime: number; // Seconds
   socialProofMaxTime: number; // Seconds
@@ -169,6 +221,16 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface SupportMessage {
+  id: string;
+  senderId: string; // User ID
+  receiverId: string; // User ID (Super Admin or Tenant Owner)
+  text: string;
+  timestamp: string;
+  read: boolean;
+  isAdminResponse?: boolean; // True if message is FROM super admin
+}
+
 export interface Address {
   street: string;
   number: string;
@@ -191,6 +253,12 @@ export interface Installment {
   paidDate?: string;
 }
 
+export interface CustomerPreference {
+    categoryId: string;
+    type: 'size' | 'color';
+    value: string; // "M" or "Azul"
+}
+
 export interface Customer {
   id: string;
   tenantId: string;
@@ -204,7 +272,10 @@ export interface Customer {
   balance: number; 
   history: Order[];
   incompleteProfile?: boolean;
-  unclaimedPrizes: Array<{ id: string; name: string; items: Product[] }>; 
+  unclaimedPrizes: Array<{ id: string; name: string; items: Product[] }>;
+  
+  // NEW: Category-based preferences
+  preferences: Record<string, CustomerPreference>; 
 }
 
 export interface Order {

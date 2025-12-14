@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { Users, ShoppingBag, Shield, LogOut, ExternalLink, ToggleLeft, ToggleRight, Search, Store, ArrowRight } from 'lucide-react';
+import { Users, ShoppingBag, Shield, LogOut, ExternalLink, ToggleLeft, ToggleRight, Search, Store, ArrowRight, Trash2, MessageCircle, X, Send } from 'lucide-react';
 
 interface SuperAdminDashboardProps {
   onEnterMyStore: () => void;
@@ -9,13 +9,44 @@ interface SuperAdminDashboardProps {
 }
 
 const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onEnterMyStore, onSelectTenant }) => {
-  const { tenants, impersonateTenant, toggleFeature, saasLogout, user } = useStore();
+  const { tenants, impersonateTenant, toggleFeature, saasLogout, user, deleteTenant, supportMessages, sendSupportMessage, markMessagesAsRead } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Chat Modal States
+  const [chatOpen, setChatOpen] = useState(false);
+  const [activeChatTenant, setActiveChatTenant] = useState<any>(null);
+  const [chatInput, setChatInput] = useState('');
 
   const filteredTenants = tenants.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   // Find Super Admin's store (USS)
   const myStore = tenants.find(t => t.id === user?.storeId) || tenants.find(t => t.slug === 'uss');
+
+  const handleDelete = (tenantId: string, name: string) => {
+      if (window.confirm(`Tem certeza que deseja EXCLUIR DEFINITIVAMENTE a loja "${name}"? Esta ação não pode ser desfeita.`)) {
+          deleteTenant(tenantId);
+      }
+  };
+
+  const openChat = (tenant: any) => {
+      setActiveChatTenant(tenant);
+      setChatOpen(true);
+      if (user) {
+          markMessagesAsRead(user.id, tenant.ownerId);
+      }
+  };
+
+  const handleSendMessage = () => {
+      if (!chatInput.trim() || !user || !activeChatTenant) return;
+      sendSupportMessage(chatInput, user.id, activeChatTenant.ownerId);
+      setChatInput('');
+  };
+
+  // Get messages for active chat
+  const currentMessages = activeChatTenant ? supportMessages.filter(
+      m => (m.senderId === user?.id && m.receiverId === activeChatTenant.ownerId) || 
+           (m.senderId === activeChatTenant.ownerId && m.receiverId === user?.id)
+  ) : [];
 
   return (
     <div className="min-h-screen bg-black text-white font-sans">
@@ -127,11 +158,15 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onEnterMyStor
             </div>
 
             <div className="space-y-4">
-               {filteredTenants.map(tenant => (
+               {filteredTenants.map(tenant => {
+                  const unreadCount = user ? supportMessages.filter(m => m.receiverId === user.id && m.senderId === tenant.ownerId && !m.read).length : 0;
+
+                  return (
                   <div key={tenant.id} className="bg-black p-4 rounded-xl border border-zinc-800 flex flex-col lg:flex-row items-center justify-between gap-6 hover:border-zinc-700 transition-colors">
                      <div className="flex-1 flex items-center gap-4 w-full">
-                        <div className="h-12 w-12 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800">
+                        <div className="h-12 w-12 rounded-lg bg-zinc-900 flex items-center justify-center border border-zinc-800 relative">
                             {tenant.logo ? <img src={tenant.logo} className="h-8 w-8 object-contain"/> : <Store className="text-zinc-600" />}
+                            {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">{unreadCount}</span>}
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
@@ -156,31 +191,100 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ onEnterMyStor
                         </button>
                      </div>
 
-                     {/* Actions */}
-                     <div className="flex gap-2 w-full lg:w-auto">
+                     {/* Actions - Fixed Mobile Layout with Flex Wrap */}
+                     <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-end">
+                        <button 
+                           onClick={() => openChat(tenant)}
+                           className={`px-4 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors flex-1 lg:flex-none ${unreadCount > 0 ? 'bg-white text-black animate-pulse' : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
+                        >
+                           <MessageCircle size={14} /> {unreadCount > 0 ? `${unreadCount}` : 'Msg'}
+                        </button>
                         <a 
                            href={`/?store=${tenant.slug}`} 
                            target="_blank" 
                            rel="noreferrer" 
-                           className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors flex-1"
+                           className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors flex-1 lg:flex-none"
                         >
-                           Ver Loja <ExternalLink size={14} />
+                           <ExternalLink size={14} /> Loja
                         </a>
                         <button 
                            onClick={() => {
                                impersonateTenant(tenant.id);
                                onSelectTenant();
                            }}
-                           className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/20 px-4 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors flex-1"
+                           className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/20 px-4 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors flex-1 lg:flex-none"
                         >
-                           <Shield size={14} /> Acessar Painel
+                           <Shield size={14} /> Acessar
                         </button>
+                        {tenant.slug !== 'uss' && ( // Prevent deleting own super admin store
+                            <button 
+                                onClick={() => handleDelete(tenant.id, tenant.name)}
+                                className="bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-500/20 px-3 py-2.5 rounded-lg transition-colors flex-none"
+                                title="Excluir Loja"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
                      </div>
                   </div>
-               ))}
+               )})}
             </div>
          </div>
       </div>
+
+      {/* CHAT MODAL */}
+      {chatOpen && activeChatTenant && (
+          <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-zinc-900 border border-zinc-700 w-full max-w-lg h-[600px] rounded-2xl shadow-2xl flex flex-col animate-scale-in">
+                  <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950 rounded-t-2xl">
+                      <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700">
+                              {activeChatTenant.logo ? <img src={activeChatTenant.logo} className="h-6 w-6 object-contain"/> : <Store size={18} className="text-zinc-500"/>}
+                          </div>
+                          <div>
+                              <h3 className="font-bold text-white">{activeChatTenant.name}</h3>
+                              <p className="text-xs text-zinc-500">Suporte Venduss</p>
+                          </div>
+                      </div>
+                      <button onClick={() => setChatOpen(false)} className="text-zinc-500 hover:text-white"><X size={20}/></button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/50">
+                      {currentMessages.length === 0 && (
+                          <p className="text-center text-zinc-500 text-sm py-10">Nenhuma mensagem ainda. Inicie a conversa!</p>
+                      )}
+                      {currentMessages.map((msg, idx) => {
+                          const isMe = msg.senderId === user?.id;
+                          return (
+                              <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                  <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${isMe ? 'bg-purple-600 text-white rounded-br-none' : 'bg-zinc-800 text-zinc-200 rounded-bl-none'}`}>
+                                      <p>{msg.text}</p>
+                                      <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-purple-300' : 'text-zinc-500'}`}>
+                                          {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                      </p>
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+
+                  <div className="p-4 bg-zinc-900 border-t border-zinc-800 rounded-b-2xl">
+                      <div className="flex gap-2">
+                          <input 
+                              className="flex-1 bg-black border border-zinc-700 rounded-xl px-4 py-3 text-white focus:border-purple-500 outline-none transition-colors"
+                              placeholder="Escreva uma mensagem..."
+                              value={chatInput}
+                              onChange={e => setChatInput(e.target.value)}
+                              onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
+                          />
+                          <button onClick={handleSendMessage} className="bg-white text-black p-3 rounded-xl hover:bg-zinc-200 transition-colors">
+                              <Send size={20} />
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 };

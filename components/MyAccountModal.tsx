@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, ShoppingBag, User, Gift, LogOut, ChevronRight, Star, Wallet, Check, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, User, Gift, LogOut, ChevronRight, Star, Wallet, Check, ArrowRight, Palette, Ruler } from 'lucide-react';
 import { Order, Product } from '../types';
 
 interface MyAccountModalProps {
@@ -9,17 +10,27 @@ interface MyAccountModalProps {
 }
 
 const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, savedPrize, logout, addToClientCart } = useStore();
-  const [activeTab, setActiveTab] = useState<'orders' | 'details' | 'prizes' | 'ranks'>('orders');
+  const { currentUser, savedPrize, logout, addToClientCart, categories, products, updateCustomerPreference } = useStore();
+  const [activeTab, setActiveTab] = useState<'orders' | 'details' | 'prizes' | 'style'>('orders');
 
-  const getStatusInfo = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return { label: 'Pendente', color: 'text-yellow-400' };
-      case 'processing': return { label: 'Processando', color: 'text-blue-400' };
-      case 'completed': return { label: 'Concluído', color: 'text-green-400' };
-      case 'cancelled': return { label: 'Cancelado', color: 'text-red-400' };
-      default: return { label: 'Desconhecido', color: 'text-zinc-400' };
-    }
+  // Helper to determine if a category uses Size or Color
+  const getCategoryPreferenceType = (catId: string): { type: 'size' | 'color', options: string[] } => {
+      // Find products in this category
+      const prods = products.filter(p => p.categoryId === catId);
+      if (prods.length === 0) return { type: 'color', options: [] }; // Default fallback
+
+      // Check if any product has variants (Size)
+      const hasVariants = prods.some(p => p.variants && p.variants.length > 0);
+      
+      if (hasVariants) {
+          // Collect unique sizes
+          const sizes = new Set<string>();
+          prods.forEach(p => p.variants.forEach(v => sizes.add(v.size)));
+          return { type: 'size', options: Array.from(sizes).sort() }; // Basic sort
+      } else {
+          // It's likely color based (e.g. Hats, Accessories)
+          return { type: 'color', options: ['Preto', 'Branco', 'Azul', 'Vermelho', 'Verde'] }; // Default colors or fetch from somewhere
+      }
   };
 
   const handleClaimPrize = (prize: { id: string, name: string, items: Product[] }) => {
@@ -39,7 +50,52 @@ const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
 
   const renderContent = () => {
     switch(activeTab) {
+      case 'style':
+          return (
+              <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-purple-900/40 to-black p-6 rounded-xl border border-purple-500/30">
+                      <h3 className="text-xl font-bold text-white mb-2">Meu Perfil de Estilo</h3>
+                      <p className="text-sm text-zinc-400">Preencha suas preferências para receber ofertas exclusivas no seu tamanho ou cor favorita.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                      {categories.map(cat => {
+                          const prefConfig = getCategoryPreferenceType(cat.id);
+                          const currentVal = currentUser.preferences[cat.id]?.value;
+
+                          return (
+                              <div key={cat.id} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                      <img src={cat.image} className="w-12 h-12 rounded-full object-cover border border-zinc-700" />
+                                      <div>
+                                          <p className="font-bold text-white">{cat.name}</p>
+                                          <p className="text-xs text-zinc-500 uppercase">{prefConfig.type === 'size' ? 'Tamanho' : 'Cor Favorita'}</p>
+                                      </div>
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-2 justify-end max-w-[50%]">
+                                      {prefConfig.options.length > 0 ? (
+                                          prefConfig.options.map(opt => (
+                                              <button 
+                                                  key={opt}
+                                                  onClick={() => updateCustomerPreference(cat.id, prefConfig.type, opt)}
+                                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${currentVal === opt ? 'bg-white text-black border-white' : 'bg-black text-zinc-500 border-zinc-700 hover:border-zinc-500'}`}
+                                              >
+                                                  {opt}
+                                              </button>
+                                          ))
+                                      ) : (
+                                          <p className="text-xs text-zinc-600">Sem opções</p>
+                                      )}
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+              </div>
+          );
       case 'orders':
+        // ... (Existing Orders view)
         return (
           <div className="space-y-4">
             {currentUser.history && currentUser.history.length > 0 ? (
@@ -50,12 +106,12 @@ const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
                       <p className="font-bold text-white">Pedido #{order.id.slice(-6)}</p>
                       <p className="text-xs text-zinc-400">{new Date(order.date).toLocaleDateString('pt-BR')}</p>
                     </div>
-                    <span className={`text-xs font-bold ${getStatusInfo(order.status).color}`}>{getStatusInfo(order.status).label}</span>
+                    <span className="text-xs font-bold text-green-400">{order.status}</span>
                   </div>
                   <div className="space-y-2 text-sm border-t border-zinc-800 pt-2">
                     {order.items.map(item => (
                       <div key={item.id} className="flex justify-between items-center text-zinc-300">
-                         <span>{item.quantity}x {item.name} {item.size && `(${item.size})`}</span>
+                         <span>{item.quantity}x {item.name}</span>
                          <span>R$ {item.price.toFixed(2)}</span>
                       </div>
                     ))}
@@ -92,7 +148,6 @@ const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
                     <p className="font-medium text-white text-right">{`${currentUser.address.street}, ${currentUser.address.number}`}<br/>{`${currentUser.address.neighborhood}, ${currentUser.address.city} - ${currentUser.address.state}`}</p>
                  </div>
              )}
-             <button className="w-full text-center text-xs pt-4 text-zinc-400 hover:text-white">Editar Dados</button>
           </div>
         );
       case 'prizes':
@@ -139,25 +194,8 @@ const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
                     </div>
                 )}
              </div>
-
-             {/* Wheel Prize */}
-             {savedPrize && (
-                 <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
-                    <h4 className="font-bold text-white mb-2">Bônus da Roleta</h4>
-                    <div className="flex items-center gap-4">
-                       <span className="text-4xl">{savedPrize.emoji}</span>
-                       <div>
-                         <p className="font-bold text-green-400">{savedPrize.label}</p>
-                         <p className="text-xs text-zinc-400">Use este brinde na sua próxima compra!</p>
-                       </div>
-                    </div>
-                 </div>
-             )}
           </div>
         );
-      case 'ranks':
-        // ... (Existing Ranks logic remains the same, assuming it's correctly imported or available)
-        return <div className="text-center text-zinc-500 py-10">Ranking de fidelidade em construção...</div>;
     }
   }
 
@@ -180,8 +218,9 @@ const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
            </div>
            <nav className="mt-8 space-y-2">
               <button onClick={() => setActiveTab('orders')} className={`w-full flex justify-between items-center text-left p-3 rounded-lg text-sm font-medium ${activeTab === 'orders' ? 'bg-white text-black' : 'hover:bg-zinc-800'}`}><span><ShoppingBag size={16} className="inline mr-2" /> Meus Pedidos</span><ChevronRight size={16}/></button>
+              <button onClick={() => setActiveTab('style')} className={`w-full flex justify-between items-center text-left p-3 rounded-lg text-sm font-medium ${activeTab === 'style' ? 'bg-white text-black' : 'hover:bg-zinc-800'}`}><span><Star size={16} className="inline mr-2" /> Meu Estilo</span><ChevronRight size={16}/></button>
               <button onClick={() => setActiveTab('details')} className={`w-full flex justify-between items-center text-left p-3 rounded-lg text-sm font-medium ${activeTab === 'details' ? 'bg-white text-black' : 'hover:bg-zinc-800'}`}><span><User size={16} className="inline mr-2" /> Meus Dados</span><ChevronRight size={16}/></button>
-              <button onClick={() => setActiveTab('prizes')} className={`w-full flex justify-between items-center text-left p-3 rounded-lg text-sm font-medium ${activeTab === 'prizes' ? 'bg-white text-black' : 'hover:bg-zinc-800'}`}><span><Gift size={16} className="inline mr-2" /> Brindes e Saldo</span><ChevronRight size={16}/></button>
+              <button onClick={() => setActiveTab('prizes')} className={`w-full flex justify-between items-center text-left p-3 rounded-lg text-sm font-medium ${activeTab === 'prizes' ? 'bg-white text-black' : 'hover:bg-zinc-800'}`}><span><Gift size={16} className="inline mr-2" /> Brindes</span><ChevronRight size={16}/></button>
            </nav>
            <button onClick={handleLogout} className="w-full text-red-400 text-sm p-3 mt-8 hover:bg-red-500/10 rounded-lg flex items-center gap-2 justify-center md:justify-start">
              <LogOut size={16} /> Sair da Conta

@@ -150,7 +150,8 @@ const AdminPOS: React.FC = () => {
       balance: 0,
       history: [],
       unclaimedPrizes: [],
-      incompleteProfile: true // Marks that this user needs to complete data on website
+      incompleteProfile: true, // Marks that this user needs to complete data on website
+      preferences: {}
     };
 
     addCustomer(newCustomerObj);

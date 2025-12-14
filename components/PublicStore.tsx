@@ -11,7 +11,7 @@ import WhatsAppButton from './WhatsAppButton';
 import Ticker from './Ticker';
 import BundleKit from './BundleKit';
 import CartDrawer from './CartDrawer';
-import UnderwearModal from './UnderwearModal';
+import PreferenceModal from './UnderwearModal'; // Renamed import
 import QuickViewModal from './QuickViewModal';
 import CheckoutModal from './CheckoutModal';
 import AuthModal from './AuthModal';
@@ -21,8 +21,10 @@ import RafflesPage from './RafflesPage';
 import MatchPage from './MatchPage';
 import FlashSale from './FlashSale';
 import CategoryPage from './CategoryPage';
+import UpsellModal from './UpsellModal';
+import PhonePromptModal from './PhonePromptModal'; 
 import { Lock, Home } from 'lucide-react';
-import { Product } from '../types';
+import { Product, UpsellOffer } from '../types';
 
 interface PublicStoreProps {
     onAdminEnter?: () => void;
@@ -30,47 +32,123 @@ interface PublicStoreProps {
 }
 
 const PublicStore: React.FC<PublicStoreProps> = ({ onAdminEnter, isPreview = false }) => {
-  const { products, settings, addToClientCart, underwearSize, kits, getTopTrends, currentTenant } = useStore();
+  const { products, settings, addToClientCart, kits, currentTenant, currentUser, loginByPhone, upsellOffers, clientCart } = useStore();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isMyAccountOpen, setIsMyAccountOpen] = useState(false);
-  const [showSizePrompt, setShowSizePrompt] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   
+  // Modals & Logic
+  const [showPhonePrompt, setShowPhonePrompt] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null); 
+  const [activeUpsell, setActiveUpsell] = useState<UpsellOffer | null>(null);
+  
+  // Preference Logic
+  const [showPreferenceModal, setShowPreferenceModal] = useState(false);
+  const [pendingUpsell, setPendingUpsell] = useState<UpsellOffer | null>(null);
+  const [preferenceConfig, setPreferenceConfig] = useState<{ type: 'size'|'color', options: string[], categoryId: string, categoryName: string } | null>(null);
+
   const [currentPage, setCurrentPage] = useState<'home' | 'topTrends' | 'raffles' | 'match'>('home');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   // If feature flags exist, use them
   const showTicker = currentTenant?.features['TICKER'] ?? settings.showTicker;
-  const showAi = currentTenant?.features['AI_ASSISTANT'] ?? settings.showAiAssistant;
   const showSocial = currentTenant?.features['SOCIAL_PROOF'] ?? settings.showSocialProof;
-
-  useEffect(() => {
-    // Disable size prompt in preview mode to not annoy admin
-    if (isPreview) return;
-
-    const timer = setTimeout(() => {
-        if (!underwearSize && !localStorage.getItem('abn_underwear_size')) {
-            setShowSizePrompt(true);
-        }
-    }, 15000);
-    return () => clearTimeout(timer);
-  }, [underwearSize, isPreview]);
 
   const handleHomeClick = () => {
       setCurrentPage('home');
       setSelectedCategoryId(null);
-      // Determine scroll container based on mode
       const container = isPreview ? document.getElementById('preview-container') : window;
       container?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // --- SMART ADD TO CART & UPSELL LOGIC ---
+  const handleSmartAddToCart = (product: Product, options: any = {}) => {
+      // 1. If not logged in and first item -> Prompt Phone
+      if (!currentUser && clientCart.length === 0 && !showPhonePrompt) {
+          setPendingProduct(product);
+          setShowPhonePrompt(true);
+          return;
+      }
+
+      // 2. Add to Cart
+      addToClientCart(product, options);
+      setIsCartOpen(true);
+
+      // 3. Check for Upsells based on SUBCATEGORY Interest
+      const relevantOffer = upsellOffers.find(offer => 
+          offer.active && offer.triggerSubcategories && offer.triggerSubcategories.includes(product.subcategoryId || '')
+      );
+
+      if (relevantOffer) {
+          // Identify trigger category (the category of the product that triggered this)
+          const triggerCatId = product.categoryId;
+          
+          // Check if user has preference for this category
+          const savedPref = currentUser?.preferences?.[triggerCatId];
+
+          if (savedPref) {
+              // User has preference -> Show Upsell immediately
+              setActiveUpsell(relevantOffer);
+          } else {
+              // Need to ask for preference (Size or Color)
+              // Determine if category uses Size or Color
+              // Heuristic: If triggered product has variants, it needs Size. If not, maybe Color.
+              let type: 'size' | 'color' = 'color';
+              let options: string[] = ['Preto', 'Branco']; // Defaults
+
+              if (product.variants && product.variants.length > 0) {
+                  type = 'size';
+                  options = Array.from(new Set(product.variants.map(v => v.size))).sort();
+              } else {
+                  // Assume Color if no size variants, purely heuristic for MVP
+                  type = 'color';
+                  options = ['Preto', 'Branco', 'Azul', 'Vermelho'];
+              }
+
+              setPreferenceConfig({
+                  type,
+                  options,
+                  categoryId: triggerCatId,
+                  categoryName: product.category
+              });
+              setPendingUpsell(relevantOffer);
+              setShowPreferenceModal(true);
+          }
+      }
+  };
+
+  const handlePreferenceSaved = (val: string) => {
+      // Preference is saved in StoreContext by the Modal
+      // Now trigger the pending upsell
+      if (pendingUpsell) {
+          setActiveUpsell(pendingUpsell);
+          setPendingUpsell(null);
+      }
+  };
+
+  const handlePhoneSubmit = (phone: string) => {
+      const loggedIn = loginByPhone(phone);
+      setShowPhonePrompt(false);
+      
+      if (pendingProduct) {
+          handleSmartAddToCart(pendingProduct);
+          setPendingProduct(null);
+      }
+  };
+
+  const handleUpsellAccept = () => {
+      setActiveUpsell(null); 
+      setIsCartOpen(true);
+  };
+
+  // ... (Render Logic same as before) ...
   const renderContent = () => {
-    if (currentPage === 'topTrends') return <TopTrends onBack={handleHomeClick} onAddToCart={(p) => { addToClientCart(p); setIsCartOpen(true); }} onQuickView={(p) => setQuickViewProduct(p)} />;
+    if (currentPage === 'topTrends') return <TopTrends onBack={handleHomeClick} onAddToCart={handleSmartAddToCart} onQuickView={(p) => setQuickViewProduct(p)} />;
     if (currentPage === 'raffles') return <RafflesPage onBack={handleHomeClick} />;
-    if (currentPage === 'match') return <MatchPage onBack={handleHomeClick} onAddToCart={(p) => { addToClientCart(p); setIsCartOpen(true); }} onQuickView={(p) => setQuickViewProduct(p)} />;
-    if (selectedCategoryId) return <CategoryPage categoryId={selectedCategoryId} onCategorySelect={(id) => { setSelectedCategoryId(id); }} onBack={handleHomeClick} onAddToCart={(p) => { addToClientCart(p); setIsCartOpen(true); }} onQuickView={(p) => setQuickViewProduct(p)} />;
+    if (currentPage === 'match') return <MatchPage onBack={handleHomeClick} onAddToCart={handleSmartAddToCart} onQuickView={(p) => setQuickViewProduct(p)} />;
+    if (selectedCategoryId) return <CategoryPage categoryId={selectedCategoryId} onCategorySelect={(id) => { setSelectedCategoryId(id); }} onBack={handleHomeClick} onAddToCart={handleSmartAddToCart} onQuickView={(p) => setQuickViewProduct(p)} />;
 
     return (
         <main className="flex-grow">
@@ -85,7 +163,7 @@ const PublicStore: React.FC<PublicStoreProps> = ({ onAdminEnter, isPreview = fal
             <div className="flex overflow-x-auto gap-4 px-4 sm:px-6 lg:px-8 no-scrollbar pb-8 snap-x">
               {products.slice(0, 6).map(product => (
                 <div key={product.id} className="min-w-[180px] md:min-w-[220px] snap-start">
-                  <ProductCard product={product} onAddToCart={(p) => { addToClientCart(p); setIsCartOpen(true); }} onQuickView={(p) => setQuickViewProduct(p)} />
+                  <ProductCard product={product} onAddToCart={handleSmartAddToCart} onQuickView={(p) => setQuickViewProduct(p)} />
                 </div>
               ))}
             </div>
@@ -95,7 +173,7 @@ const PublicStore: React.FC<PublicStoreProps> = ({ onAdminEnter, isPreview = fal
               key={kit.id}
               mainProduct={kit.products[0]}
               secondaryProduct={kit.products[1] || kit.products[0]} 
-              onAddToCart={() => { addToClientCart({ ...kit.products[0], id: `kit-${kit.id}`, price: kit.price, category: 'Kits', name: kit.name }); setIsCartOpen(true); }} 
+              onAddToCart={() => { handleSmartAddToCart({ ...kit.products[0], id: `kit-${kit.id}`, price: kit.price, category: 'Kits', name: kit.name }); }} 
               overridePrice={kit.price} overrideOriginalPrice={kit.originalPrice} kitName={kit.name} kitImage={kit.image}
             />
           ))}
@@ -103,7 +181,7 @@ const PublicStore: React.FC<PublicStoreProps> = ({ onAdminEnter, isPreview = fal
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex justify-between items-end mb-8"><div><h2 className="text-2xl font-bold text-white">Lançamentos</h2></div></div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
-              {products.slice(4, 12).map(product => <ProductCard key={product.id} product={product} onAddToCart={(p) => { addToClientCart(p); setIsCartOpen(true); }} onQuickView={(p) => setQuickViewProduct(p)} />)}
+              {products.slice(4, 12).map(product => <ProductCard key={product.id} product={product} onAddToCart={handleSmartAddToCart} onQuickView={(p) => setQuickViewProduct(p)} />)}
             </div>
           </section>
         </main>
@@ -116,11 +194,33 @@ const PublicStore: React.FC<PublicStoreProps> = ({ onAdminEnter, isPreview = fal
       <Navbar onOpenCart={() => setIsCartOpen(true)} onOpenAuth={() => setIsAuthOpen(true)} onOpenMyAccount={() => setIsMyAccountOpen(true)} onOpenRaffles={() => setCurrentPage('raffles')} />
       
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }} />
-      <UnderwearModal isOpen={showSizePrompt} onClose={() => setShowSizePrompt(false)} />
-      <QuickViewModal isOpen={!!quickViewProduct} product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={(items) => { if (!quickViewProduct) return; items.forEach(item => addToClientCart(quickViewProduct, { size: item.size, quantity: item.quantity })); setQuickViewProduct(null); setIsCartOpen(true); }} />
+      
+      {/* Dynamic Preference Modal (Size or Color) */}
+      {preferenceConfig && (
+          <PreferenceModal 
+              isOpen={showPreferenceModal} 
+              onClose={() => setShowPreferenceModal(false)}
+              type={preferenceConfig.type}
+              options={preferenceConfig.options}
+              categoryId={preferenceConfig.categoryId}
+              categoryName={preferenceConfig.categoryName}
+              onSave={handlePreferenceSaved}
+          />
+      )}
+      
+      <QuickViewModal isOpen={!!quickViewProduct} product={quickViewProduct} onClose={() => setQuickViewProduct(null)} onAddToCart={(items) => { if (!quickViewProduct) return; items.forEach(item => handleSmartAddToCart(quickViewProduct, { size: item.size, quantity: item.quantity })); setQuickViewProduct(null); }} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
       <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} />
       <MyAccountModal isOpen={isMyAccountOpen} onClose={() => setIsMyAccountOpen(false)} />
+      <PhonePromptModal isOpen={showPhonePrompt} onClose={() => setShowPhonePrompt(false)} onSubmit={handlePhoneSubmit} />
+      
+      {/* Upsell Modal */}
+      <UpsellModal 
+          isOpen={!!activeUpsell} 
+          onClose={() => setActiveUpsell(null)} 
+          onAccept={handleUpsellAccept} 
+          offer={activeUpsell}
+      />
       
       {renderContent()}
       

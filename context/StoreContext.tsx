@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Customer, Order, AppSettings, CartItem, Prize, Category, Banner, Kit, Installment, Brand, Color, SizeGrid, Raffle, User, Tenant } from '../types';
+import { Product, Customer, Order, AppSettings, CartItem, Prize, Category, Banner, Kit, Installment, Brand, Color, SizeGrid, Raffle, User, Tenant, SupportMessage, UpsellOffer, AbandonedCart, CustomerPreference } from '../types';
 import { PRODUCTS, NAMES, CITIES } from '../constants';
 
 // --- DEFAULT SETTINGS FACTORY ---
@@ -17,6 +17,25 @@ const createDefaultSettings = (storeName: string): AppSettings => ({
         { name: 'Curitiba, PR', percentage: 10 },
         { name: 'Salvador, BA', percentage: 10 }
     ],
+
+    // Roulette Defaults (Neon Theme)
+    rouletteEnabled: true,
+    rouletteMinTotal: 50,
+    rouletteSegments: [
+        { id: '1', emoji: '🧢', label: 'Ganhou um Boné', type: 'win', color: '#a855f7' }, // Purple
+        { id: '2', emoji: '❌', label: 'Quase!', type: 'loss', color: '#18181b' },      // Zinc
+        { id: '3', emoji: '👕', label: 'Ganhou Camiseta', type: 'win', color: '#ec4899' }, // Pink
+        { id: '4', emoji: '❌', label: 'Tente de novo', type: 'loss', color: '#18181b' },
+        { id: '5', emoji: '🧦', label: 'Ganhou Meia', type: 'win', color: '#3b82f6' }, // Blue
+        { id: '6', emoji: '❌', label: 'Não foi dessa vez', type: 'loss', color: '#18181b' },
+        { id: '7', emoji: '🎟️', label: '10% OFF', type: 'win', color: '#eab308' }, // Yellow
+        { id: '8', emoji: '❌', label: 'Passou perto', type: 'loss', color: '#18181b' },
+    ],
+    rouletteRigging: {
+        active: false,
+        minOrderValue: 150,
+        forceSegmentId: '3' // Forces T-shirt
+    },
 
     storeName: storeName, whatsappNumber: '', bannerAutoRotate: true, bannerInterval: 5,
     finePercentage: 2, interestDailyPercentage: 0.1, freeShippingThreshold: 299, fixedShippingCost: 25,
@@ -116,6 +135,12 @@ interface StoreContextType {
   impersonateTenant: (tenantId: string) => void;
   toggleFeature: (featureKey: string, tenantId?: string) => void;
   updateTenantLogo: (logo: string) => void;
+  deleteTenant: (tenantId: string) => void; 
+
+  // Support System
+  supportMessages: SupportMessage[];
+  sendSupportMessage: (text: string, fromId: string, toId: string) => void;
+  markMessagesAsRead: (userId: string, senderId: string) => void;
 
   // Store Data (Scoped to Current Tenant)
   products: Product[];
@@ -130,6 +155,10 @@ interface StoreContextType {
   colors: Color[];
   sizeGrids: SizeGrid[];
   
+  // Advanced Features
+  upsellOffers: UpsellOffer[];
+  abandonedCarts: AbandonedCart[];
+  
   // Client Actions
   clientCart: CartItem[];
   savedPrize: Prize | null;
@@ -137,14 +166,20 @@ interface StoreContextType {
   currentUser: Customer | null;
   
   storeLogin: (email: string, pass: string) => boolean;
+  loginByEmail: (email: string) => boolean;
+  loginByPhone: (phone: string) => boolean; // NEW: Login just by phone
   storeLogout: () => void;
   storeRegister: (customerData: Omit<Customer, 'id' | 'debt' | 'history' | 'balance' | 'unclaimedPrizes'>) => Customer | null;
+  
+  updateCustomerPreference: (categoryId: string, type: 'size' | 'color', value: string) => void; // NEW
   
   setUnderwearSize: (size: string) => void;
   addToClientCart: (product: Product, options?: { size?: string, quantity?: number, isPrize?: boolean }) => void;
   removeFromClientCart: (productId: string, size?: string) => void;
   updateClientCartQuantity: (productId: string, delta: number, size?: string) => void;
   clearClientCart: () => void;
+  trackAbandonedCart: (phone: string, items: CartItem[]) => void; // NEW
+  
   claimPrize: (prize: Prize) => void;
   consumePrize: () => void;
   checkRaffleEligibility: (raffleId: string, customerId: string) => boolean;
@@ -156,14 +191,15 @@ interface StoreContextType {
   removeProduct: (id: string) => void;
   duplicateProduct: (product: Product) => Product;
   
-  addCategory: (category: Omit<Category, 'tenantId'>) => Category; // Changed return type
-  updateCategory: (category: Category) => void; // Added
+  addCategory: (category: Omit<Category, 'tenantId'>) => Category; 
+  updateCategory: (category: Category) => void; 
   removeCategory: (id: string) => void;
   addBanner: (banner: Omit<Banner, 'tenantId'>) => void;
   removeBanner: (id: string) => void;
   addKit: (kit: Omit<Kit, 'tenantId'>) => void;
   removeKit: (id: string) => void;
   addCustomer: (customer: Omit<Customer, 'tenantId'>) => void;
+  updateCustomer: (customer: Customer) => void; // Added update capability
   updateCustomerDebt: (id: string, amount: number) => void;
   payInstallment: (customerId: string, orderId: string, installmentId: string, amountPaid: number, nextDate?: string) => void;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status' | 'totalCost' | 'tenantId'> & { status?: Order['status'] }) => Order;
@@ -172,12 +208,17 @@ interface StoreContextType {
   updateRaffle: (raffle: Raffle) => void;
   removeRaffle: (id: string) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
-  addBrand: (brand: Omit<Brand, 'tenantId'>) => Brand; // Changed return type
+  addBrand: (brand: Omit<Brand, 'tenantId'>) => Brand; 
   removeBrand: (id: string) => void;
-  addColor: (color: Omit<Color, 'tenantId'>) => Color; // Changed return type
+  addColor: (color: Omit<Color, 'tenantId'>) => Color; 
   removeColor: (id: string) => void;
-  addSizeGrid: (grid: Omit<SizeGrid, 'tenantId'>) => SizeGrid; // Changed return type
+  addSizeGrid: (grid: Omit<SizeGrid, 'tenantId'>) => SizeGrid; 
   removeSizeGrid: (id: string) => void;
+  
+  // Upsell Actions
+  addUpsellOffer: (offer: Omit<UpsellOffer, 'tenantId'>) => void;
+  updateUpsellOffer: (offer: UpsellOffer) => void;
+  removeUpsellOffer: (id: string) => void;
 
   getFinancialStats: (startDate: Date, endDate: Date) => any;
   getCustomerRanking: () => { customer: Customer, totalProfit: number }[];
@@ -201,6 +242,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [user, setUser] = useState<User | null>(null);
   const [tenants, setTenants] = useState<Tenant[]>(INITIAL_TENANTS);
   const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null);
+  
+  // SUPPORT MESSAGES STATE
+  const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([
+      { id: '1', senderId: 'super-admin-1', receiverId: 'abn-owner-1', text: 'Bem-vindo à Venduss! Se precisar de ajuda, chame aqui.', timestamp: new Date().toISOString(), read: false, isAdminResponse: true }
+  ]);
 
   // MASTER DATA
   const [masterProducts, setMasterProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -214,6 +260,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [masterColors, setMasterColors] = useState<Color[]>(INITIAL_COLORS);
   const [masterSizeGrids, setMasterSizeGrids] = useState<SizeGrid[]>(INITIAL_SIZE_GRIDS);
   
+  // NEW MASTER DATA
+  const [masterUpsellOffers, setMasterUpsellOffers] = useState<UpsellOffer[]>([]);
+  const [masterAbandonedCarts, setMasterAbandonedCarts] = useState<AbandonedCart[]>([]);
+
   const [settings, setSettings] = useState<AppSettings>(createDefaultSettings('Loja'));
   const [clientCart, setClientCart] = useState<CartItem[]>([]);
   const [savedPrize, setSavedPrize] = useState<Prize | null>(null);
@@ -225,7 +275,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         id: `c-${i}`, tenantId: ABN_ID, name: NAMES[i % NAMES.length] + ' ' + (['Silva', 'Santos', 'Oliveira'][i % 3]),
         phone: `(11) 99999-999${i}`, email: `cliente${i}@email.com`, password: '123',
         address: { street: 'Rua Exemplo', number: '123', neighborhood: 'Centro', city: CITIES[i % CITIES.length], state: 'SP', zip: '00000-000' },
-        debt: i % 3 === 0 ? Math.floor(Math.random() * 200) : 0, balance: 0, history: [], unclaimedPrizes: []
+        debt: i % 3 === 0 ? Math.floor(Math.random() * 200) : 0, balance: 0, history: [], unclaimedPrizes: [],
+        preferences: {}
       }));
       setMasterCustomers(abnCustomers);
   }, []);
@@ -242,6 +293,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const brands = masterBrands.filter(x => x.tenantId === currentTenantId);
   const colors = masterColors.filter(x => x.tenantId === currentTenantId);
   const sizeGrids = masterSizeGrids.filter(x => x.tenantId === currentTenantId);
+  const upsellOffers = masterUpsellOffers.filter(x => x.tenantId === currentTenantId);
+  const abandonedCarts = masterAbandonedCarts.filter(x => x.tenantId === currentTenantId);
 
   // ... (Keep existing SaaS Logic) ...
   const saasLogin = async (email: string, pass: string) => {
@@ -307,6 +360,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (t) { setCurrentTenantState(t); setSettings(t.settings); } else { setCurrentTenantState(null); }
   };
   const impersonateTenant = (tenantId: string) => { const t = tenants.find(tenant => tenant.id === tenantId); if (t) setCurrentTenant(t.slug); };
+  
+  const deleteTenant = (tenantId: string) => {
+      setTenants(prev => prev.filter(t => t.id !== tenantId));
+      if (currentTenant?.id === tenantId) {
+          setCurrentTenantState(null);
+      }
+  };
+
   const toggleFeature = (featureKey: string, tenantId?: string) => {
       if (tenantId) { setTenants(prev => prev.map(t => { if (t.id === tenantId) { return { ...t, features: { ...t.features, [featureKey]: !t.features[featureKey] } }; } return t; })); }
   };
@@ -323,6 +384,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const updatedTenant = { ...currentTenant, settings: updatedSettings };
       setCurrentTenantState(updatedTenant);
       setTenants(prev => prev.map(t => t.id === currentTenant.id ? updatedTenant : t));
+  };
+
+  // --- MESSAGING LOGIC ---
+  const sendSupportMessage = (text: string, fromId: string, toId: string) => {
+      const isAdminResponse = fromId === MOCK_SUPER_ADMIN.id;
+      const newMessage: SupportMessage = {
+          id: Date.now().toString(),
+          senderId: fromId,
+          receiverId: toId,
+          text,
+          timestamp: new Date().toISOString(),
+          read: false,
+          isAdminResponse
+      };
+      setSupportMessages(prev => [...prev, newMessage]);
+  };
+
+  const markMessagesAsRead = (userId: string, senderId: string) => {
+      setSupportMessages(prev => prev.map(m => {
+          if (m.receiverId === userId && m.senderId === senderId && !m.read) {
+              return { ...m, read: true };
+          }
+          return m;
+      }));
   };
 
   // --- CRUD HELPERS ---
@@ -345,7 +430,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addKit = (k: any) => setMasterKits(prev => [...prev, { ...k, tenantId: currentTenantId }]);
   const removeKit = (id: string) => setMasterKits(prev => prev.filter(k => k.id !== id));
   
-  const addCustomer = (c: any) => setMasterCustomers(prev => [...prev, { ...c, tenantId: currentTenantId }]);
+  const addCustomer = (c: any) => setMasterCustomers(prev => [...prev, { ...c, tenantId: currentTenantId, preferences: {} }]);
+  const updateCustomer = (c: Customer) => setMasterCustomers(prev => prev.map(cust => cust.id === c.id ? c : cust));
   const updateCustomerDebt = (id: string, amt: number) => setMasterCustomers(prev => prev.map(c => c.id === id ? {...c, debt: c.debt + amt} : c));
   
   const addBrand = (b: any) => { const newBrand = { ...b, tenantId: currentTenantId }; setMasterBrands(prev => [...prev, newBrand]); return newBrand; };
@@ -357,8 +443,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addSizeGrid = (g: any) => { const newGrid = { ...g, tenantId: currentTenantId }; setMasterSizeGrids(prev => [...prev, newGrid]); return newGrid; };
   const removeSizeGrid = (id: string) => setMasterSizeGrids(prev => prev.filter(g => g.id !== id));
 
+  // --- Upsell CRUD ---
+  const addUpsellOffer = (o: any) => setMasterUpsellOffers(prev => [...prev, { ...o, tenantId: currentTenantId }]);
+  const updateUpsellOffer = (o: UpsellOffer) => setMasterUpsellOffers(prev => prev.map(off => off.id === o.id ? o : off));
+  const removeUpsellOffer = (id: string) => setMasterUpsellOffers(prev => prev.filter(o => o.id !== id));
+
   // ... (Keep existing Order & Raffle logic) ...
-  const addOrder = (o: any) => { const newO = { ...o, id: `o-${Date.now()}`, tenantId: currentTenantId, date: new Date().toISOString(), status: 'pending' }; setMasterOrders(prev => [newO, ...prev]); return newO; };
+  const addOrder = (o: any) => { 
+      const newO = { ...o, id: `o-${Date.now()}`, tenantId: currentTenantId, date: new Date().toISOString(), status: 'pending' }; 
+      setMasterOrders(prev => [newO, ...prev]); 
+      
+      // Clear abandoned cart if order is placed
+      if (o.customerPhone) {
+          setMasterAbandonedCarts(prev => prev.filter(ac => ac.customerPhone !== o.customerPhone));
+      }
+      return newO; 
+  };
   const updateOrderStatus = (id: string, st: any) => setMasterOrders(prev => prev.map(o => o.id === id ? {...o, status: st} : o));
   const payInstallment = (customerId: string, orderId: string, installmentId: string, amountPaid: number, nextDate?: string) => {
       setMasterOrders(prev => prev.map(o => {
@@ -378,13 +478,86 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // ... (Keep existing Client Actions & Analytics) ...
   const storeLogin = (email: string, pass: string) => { const u = customers.find(c => c.email.toLowerCase() === email.toLowerCase() && c.password === pass); if (u) { setCurrentUser(u); return true; } return false; };
-  const storeLogout = () => setCurrentUser(null);
-  const storeRegister = (data: any) => { const u: Customer = { ...data, id: `c-${Date.now()}`, tenantId: currentTenantId, debt: 0, balance: 0, history: [], unclaimedPrizes: [] }; setMasterCustomers(prev => [...prev, u]); setCurrentUser(u); return u; };
-  const handleSetUnderwearSize = (size: string) => setUnderwearSize(size);
-  const addToClientCart = (p: Product, opts: any = {}) => { setClientCart(prev => { const existing = prev.find(i => i.id === p.id && i.size === opts.size); return existing ? prev.map(i => i.id === p.id && i.size === opts.size ? { ...i, quantity: i.quantity + (opts.quantity || 1) } : i) : [...prev, { ...p, quantity: opts.quantity || 1, size: opts.size, isPrize: opts.isPrize, price: opts.isPrize ? 0 : p.price }]; }); };
+  
+  const loginByEmail = (email: string) => {
+      const u = customers.find(c => c.email.toLowerCase() === email.toLowerCase());
+      if (u) { setCurrentUser(u); return true; }
+      return false;
+  };
+
+  const loginByPhone = (phone: string) => {
+      const cleanPhone = phone.replace(/\D/g, '');
+      const u = customers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
+      if (u) {
+          setCurrentUser(u);
+          if (u.preferences?.size) setUnderwearSize(u.preferences.size); // legacy support
+          return true;
+      }
+      return false;
+  };
+
+  const storeLogout = () => { setCurrentUser(null); setClientCart([]); };
+  const storeRegister = (data: any) => { const u: Customer = { ...data, id: `c-${Date.now()}`, tenantId: currentTenantId, debt: 0, balance: 0, history: [], unclaimedPrizes: [], preferences: {} }; setMasterCustomers(prev => [...prev, u]); setCurrentUser(u); return u; };
+  
+  // Update Customer Preference (Size or Color) for a specific Category
+  const updateCustomerPreference = (categoryId: string, type: 'size' | 'color', value: string) => {
+      if (currentUser) {
+          const updatedUser = { 
+              ...currentUser, 
+              preferences: { 
+                  ...currentUser.preferences, 
+                  [categoryId]: { categoryId, type, value } 
+              } 
+          };
+          updateCustomer(updatedUser);
+          setCurrentUser(updatedUser);
+      }
+  };
+
+  const handleSetUnderwearSize = (size: string) => {
+      setUnderwearSize(size); // Legacy global size
+  };
+
+  const addToClientCart = (p: Product, opts: any = {}) => { 
+      setClientCart(prev => { 
+          const existing = prev.find(i => i.id === p.id && i.size === opts.size); 
+          const newCart = existing ? prev.map(i => i.id === p.id && i.size === opts.size ? { ...i, quantity: i.quantity + (opts.quantity || 1) } : i) : [...prev, { ...p, quantity: opts.quantity || 1, size: opts.size, isPrize: opts.isPrize, price: opts.isPrize ? 0 : p.price }];
+          
+          // Track cart update
+          if (currentUser) {
+              trackAbandonedCart(currentUser.phone, newCart);
+          }
+          return newCart;
+      }); 
+  };
+
   const removeFromClientCart = (id: string, size?: string) => setClientCart(prev => prev.filter(i => !(i.id === id && i.size === size)));
   const updateClientCartQuantity = (id: string, delta: number, size?: string) => setClientCart(prev => prev.map(i => i.id === id && i.size === size ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i).filter(i => i.quantity > 0));
   const clearClientCart = () => setClientCart([]);
+  
+  // --- ABANDONED CART LOGIC ---
+  const trackAbandonedCart = (phone: string, items: CartItem[]) => {
+      if (!phone || items.length === 0) return;
+      const cleanPhone = phone.replace(/\D/g, '');
+      const existing = abandonedCarts.find(ac => ac.customerPhone === cleanPhone);
+      
+      const newEntry: AbandonedCart = {
+          id: existing ? existing.id : Date.now().toString(),
+          tenantId: currentTenantId,
+          customerPhone: cleanPhone,
+          customerName: currentUser?.name,
+          items: items,
+          total: items.reduce((acc, i) => acc + (i.price * i.quantity), 0),
+          updatedAt: new Date().toISOString(),
+          recovered: false
+      };
+
+      setMasterAbandonedCarts(prev => {
+          const others = prev.filter(ac => ac.customerPhone !== cleanPhone);
+          return [...others, newEntry];
+      });
+  };
+
   const claimPrize = (p: Prize) => setSavedPrize(p);
   const consumePrize = () => { if (clientCart.some(i => i.isPrize)) setSavedPrize(null); };
   const checkRaffleEligibility = (raffleId: string, customerId: string) => true; 
@@ -400,14 +573,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   return (
     <StoreContext.Provider value={{
-      user, saasLogin, saasLogout, saasRegister, completeRegistration, updateUser, tenants, currentTenant, setCurrentTenant, impersonateTenant, toggleFeature, updateTenantLogo,
+      user, saasLogin, saasLogout, saasRegister, completeRegistration, updateUser, tenants, currentTenant, setCurrentTenant, impersonateTenant, toggleFeature, updateTenantLogo, deleteTenant,
+      supportMessages, sendSupportMessage, markMessagesAsRead,
       products, customers, orders, categories, banners, kits, raffles, settings, brands, colors, sizeGrids,
-      clientCart, savedPrize, underwearSize, currentUser, storeLogin, storeLogout, storeRegister,
-      setUnderwearSize: handleSetUnderwearSize, addToClientCart, removeFromClientCart, updateClientCartQuantity, clearClientCart,
+      upsellOffers, abandonedCarts,
+      clientCart, savedPrize, underwearSize, currentUser, storeLogin, loginByEmail, loginByPhone, storeLogout, storeRegister,
+      setUnderwearSize: handleSetUnderwearSize, addToClientCart, removeFromClientCart, updateClientCartQuantity, clearClientCart, trackAbandonedCart, updateCustomerPreference,
       claimPrize, consumePrize, checkRaffleEligibility, finishRaffle, addProduct, updateProduct, removeProduct, duplicateProduct,
-      addCategory, updateCategory, removeCategory, addBanner, removeBanner, addKit, removeKit, addCustomer, updateCustomerDebt, payInstallment,
+      addCategory, updateCategory, removeCategory, addBanner, removeBanner, addKit, removeKit, addCustomer, updateCustomer, updateCustomerDebt, payInstallment,
       addOrder, updateOrderStatus, addRaffle, updateRaffle, removeRaffle, updateSettings, addBrand, removeBrand, addColor, removeColor,
-      addSizeGrid, removeSizeGrid, getFinancialStats, getCustomerRanking, applyBulkPromotion, getTopTrends, getCustomerStats, getMatchingProducts, stats
+      addSizeGrid, removeSizeGrid, addUpsellOffer, updateUpsellOffer, removeUpsellOffer,
+      getFinancialStats, getCustomerRanking, applyBulkPromotion, getTopTrends, getCustomerStats, getMatchingProducts, stats
     }}>
       {children}
     </StoreContext.Provider>
