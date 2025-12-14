@@ -54,7 +54,7 @@ const validateCPF = (cpf: string) => {
 };
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
-  const { clientCart, settings, addOrder, clearClientCart, currentUser, addToClientCart, underwearSize, loginByEmail, upsellOffers } = useStore();
+  const { clientCart, settings, addOrder, clearClientCart, currentUser, addToClientCart, underwearSize, loginByEmail, upsellOffers, currentTenant } = useStore();
   
   const [step, setStep] = useState<CheckoutStep>('shipping');
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod | null>(null);
@@ -136,7 +136,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
             costPrice: 0,
             categoryId: 'upsell',
             galleryImages: [],
-            variants: []
+            variants: [],
+            tenantId: currentTenant?.id || 'unknown'
         });
     }
     setStep('shipping');
@@ -510,10 +511,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
         
         {step !== 'roulette' && step !== 'upsell' && (
             <>
-                <button onClick={handleBack} className="absolute top-4 left-4 p-2 text-zinc-500 hover:text-white transition-colors">
+                <button onClick={handleBack} className="absolute top-4 left-4 p-2 hover:bg-zinc-800 rounded-full text-zinc-400 transition-colors">
                     <ArrowLeft size={20} />
                 </button>
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white transition-colors">
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-zinc-800 rounded-full text-zinc-400 transition-colors">
                     <X size={20} />
                 </button>
             </>

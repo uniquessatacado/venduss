@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, User, Lock, Mail, Phone, FileText } from 'lucide-react';
@@ -8,7 +9,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { login, register } = useStore();
+  const { storeLogin: login, storeRegister: register } = useStore();
   const [isLoginView, setIsLoginView] = useState(true);
   const [error, setError] = useState('');
 

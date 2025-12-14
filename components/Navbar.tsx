@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { ShoppingBag, User, LogOut, ChevronDown, Gift } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
@@ -10,7 +11,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenAuth, onOpenMyAccount, onOpenRaffles }) => {
-  const { clientCart, currentUser, logout, raffles, currentTenant, settings } = useStore();
+  const { clientCart, currentUser, storeLogout, raffles, currentTenant, settings } = useStore();
   const cartCount = clientCart.reduce((acc, item) => acc + item.quantity, 0);
   const [isBumped, setIsBumped] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -88,7 +89,7 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenCart, onOpenAuth, onOpenMyAccount
                       <button onClick={() => { onOpenMyAccount(); setIsUserMenuOpen(false); }} className={`w-full text-left px-3 py-2 text-sm rounded flex items-center gap-2 ${isDark ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-700 hover:bg-gray-100'}`}>
                           <User size={14} /> Painel do Cliente
                       </button>
-                      <button onClick={() => { logout(); setIsUserMenuOpen(false); }} className={`w-full text-left px-3 py-2 text-sm rounded text-red-500 flex items-center gap-2 ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-100'}`}>
+                      <button onClick={() => { storeLogout(); setIsUserMenuOpen(false); }} className={`w-full text-left px-3 py-2 text-sm rounded text-red-500 flex items-center gap-2 ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-100'}`}>
                           <LogOut size={14} /> Sair
                       </button>
                     </div>

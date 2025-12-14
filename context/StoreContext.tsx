@@ -170,7 +170,7 @@ interface StoreContextType {
   loginByEmail: (email: string) => boolean;
   loginByPhone: (phone: string) => boolean; // NEW: Login just by phone
   storeLogout: () => void;
-  storeRegister: (customerData: Omit<Customer, 'id' | 'debt' | 'history' | 'balance' | 'unclaimedPrizes'>) => Customer | null;
+  storeRegister: (customerData: Omit<Customer, 'id' | 'debt' | 'history' | 'balance' | 'unclaimedPrizes' | 'tenantId' | 'preferences'>) => Customer | null;
   
   updateCustomerPreference: (categoryId: string, type: 'size' | 'color', value: string) => void; // NEW
   
@@ -491,7 +491,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const u = customers.find(c => c.phone.replace(/\D/g, '') === cleanPhone);
       if (u) {
           setCurrentUser(u);
-          if (u.preferences?.size) setUnderwearSize(u.preferences.size); // legacy support
+          if (u.preferences?.size) setUnderwearSize(u.preferences.size.value); // legacy support
           return true;
       }
       return false;

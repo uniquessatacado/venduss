@@ -10,7 +10,7 @@ interface MyAccountModalProps {
 }
 
 const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
-  const { currentUser, savedPrize, logout, addToClientCart, categories, products, updateCustomerPreference } = useStore();
+  const { currentUser, savedPrize, storeLogout, addToClientCart, categories, products, updateCustomerPreference } = useStore();
   const [activeTab, setActiveTab] = useState<'orders' | 'details' | 'prizes' | 'style'>('orders');
 
   // Helper to determine if a category uses Size or Color
@@ -44,7 +44,7 @@ const MyAccountModal: React.FC<MyAccountModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen || !currentUser) return null;
 
   const handleLogout = () => {
-    logout();
+    storeLogout();
     onClose();
   };
 

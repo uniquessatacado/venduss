@@ -45,6 +45,7 @@ export interface UpsellOffer {
   promoPrice: number; 
   originalPrice: number; 
   // sizeRequired removed as it is now implicit based on customer profile logic
+  sizeRequired?: boolean;
 }
 
 export interface AbandonedCart {

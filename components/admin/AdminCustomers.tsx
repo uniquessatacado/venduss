@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Plus, Search, DollarSign, Trash2, User, Phone, MapPin, Calendar, TrendingUp, AlertCircle, CheckCircle, ArrowRight, Share2, Sparkles, X, ChevronLeft, LayoutGrid, Heart } from 'lucide-react';
@@ -203,7 +204,8 @@ const AdminCustomers: React.FC = () => {
       debt: 0,
       balance: 0,
       history: [],
-      unclaimedPrizes: []
+      unclaimedPrizes: [],
+      preferences: {}
     });
     setNewCustomer({ name: '', phone: '', city: '' });
     setShowAddModal(false);
