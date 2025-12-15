@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
-  venduss:
+  frontend:
     build: .
     ports:
-      - "3000:80"
+      - "8081:80"
     restart: unless-stopped
