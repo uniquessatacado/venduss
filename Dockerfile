@@ -3,9 +3,12 @@ FROM node:18 AS build
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+# 🔥 linha crítica
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 COPY . .
+
 RUN npm run build
 
 FROM nginx:alpine
