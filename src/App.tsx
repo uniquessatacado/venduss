@@ -1,15 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
-// Note: We need to assume components are now in src/components for this to work
-// If the user hasn't moved them, this will fail. But the user asked for structure fix.
-import AdminLayout from '../components/admin/AdminLayout';
-import PublicStore from '../components/PublicStore';
+// Adjusted imports to point to ./components since App.tsx is in src/
+import AdminLayout from './components/admin/AdminLayout';
+import PublicStore from './components/PublicStore';
 
 // --- SAAS PAGES ---
-import SaasLogin from '../components/saas/LoginPage';
-import SaasRegister from '../components/saas/RegisterPage';
-import SuperAdminDashboard from '../components/saas/SuperAdminDashboard';
+import SaasLogin from './components/saas/LoginPage';
+import SaasRegister from './components/saas/RegisterPage';
+import SuperAdminDashboard from './components/saas/SuperAdminDashboard';
 
 // --- ROUTER LOGIC ---
 const MainRouter: React.FC = () => {
