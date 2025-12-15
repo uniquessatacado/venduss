@@ -2,8 +2,9 @@ version: "3.8"
 
 services:
   frontend:
-    build: .
+    build:
+      context: ./venduss
+      dockerfile: Dockerfile
     ports:
       - "3000:80"
     restart: unless-stopped
-
