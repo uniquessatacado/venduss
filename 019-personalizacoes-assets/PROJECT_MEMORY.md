@@ -16,6 +16,8 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 8. Toda ação administrativa relevante preserva autoria quando houver suporte no banco.
 9. Finalizar e testar a etapa atual antes de iniciar/publicar outra.
 10. Toda publicação gera nova entrada no histórico de versões.
+11. Ajustes visuais devem ser cirúrgicos: não compactar globalmente topbar, títulos, cards, botões ou tipografia sem comparar com o layout aprovado anterior.
+12. Se uma alteração visual degradar a experiência, restaurar primeiro o último layout aprovado e só depois reaplicar a correção necessária isoladamente.
 
 ## Identidade e acesso
 - Nome: **019 Personalizações**.
@@ -105,7 +107,8 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 - Área pública usa RPC `z19p_get_public_workspace`.
 - Equipe usa Edge Function `z19p-team-admin`.
 - Evitar patches temporários duplicando lógica já presente no bundle principal.
-- O patch `team-patch.js` ficou redundante depois que as mesmas funções passaram ao bundle principal; v2.3 o neutraliza.
+- O patch `team-patch.js` ficou redundante depois que as mesmas funções passaram ao bundle principal; v2.3 o neutralizou.
+- `team-patch.css` deve ser somente aditivo e pontual; não deve redesenhar globalmente a aplicação.
 
 ## Checklist antes de publicar
 - node --check app.js
@@ -124,6 +127,7 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 - equipe/dashboard continuam acessíveis ao admin
 - área pública carrega vendedor, orçamento, mockups e artes
 - nenhuma alteração visual remove função existente
+- comparar desktop e mobile com o último layout aprovado antes de publicar CSS global
 
 ## Pendências priorizadas
 1. Google Drive: importar pasta recursivamente preservando subpastas e arquivos originais.
@@ -163,9 +167,15 @@ RLS da equipe e Storage, auditoria, primeiro acesso e patch temporário de estad
 - Revisados todos os requisitos anteriores contra o código atual.
 - Pendências explicitadas: Google Drive e upload público do cliente.
 - Patch JavaScript redundante neutralizado para evitar dupla execução.
-- Limpeza visual por CSS sem remover funções.
-- Responsividade reforçada para filtros, cards, formulários, dashboard e mobile.
-- Auditoria encontrou `Cotton` ausente do catálogo do banco; item foi cadastrado novamente e validado na ordem correta.
+- Foi aplicada uma compactação visual global por CSS; validação real mostrou que ela degradou o layout aprovado anterior.
+- Auditoria encontrou `Cotton` ausente do catálogo do banco; item foi cadastrado novamente.
+
+### v2.4 — Restauração do layout aprovado
+- Pedido: recuperar o visual anterior sem perder as funções novas.
+- Causa identificada: `team-patch.css` v2.3 sobrescreveu globalmente topbar, títulos, cards, botões, grids e tipografia com muitos `!important`.
+- Ação: retirar a compactação global e voltar o patch CSS ao papel original, apenas complementando blocos novos e o overflow do filtro de status.
+- Preservar integralmente: equipe, dashboard, UF, histórico, responsável, status, WhatsApp, alerta 24h, orçamento, pastas, artes e mockups.
+- Banco e regras de negócio não serão alterados nesta correção visual.
 
 ## Próxima versão
-Na próxima solicitação, criar **v2.4** antes de publicar e registrar: pedido, arquivos/tabelas afetados, mudanças, testes e pendências.
+Na próxima solicitação, criar **v2.5** antes de publicar e registrar: pedido, arquivos/tabelas afetados, mudanças, testes e pendências.
