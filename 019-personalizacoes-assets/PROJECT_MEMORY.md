@@ -168,102 +168,26 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 
 ## 8. Histórico de versões
 
-### v1.0 — Base
-- Login, empresas, upload e armazenamento no Supabase.
-- Área do cliente e arquivos PNG.
+### v1.0–v1.4 — Base, produção, comercial e organização
+- Login/Supabase; empresas; upload/PNG; área do cliente.
+- Recorte transparente, 300 DPI, 4032/6000/8192; mockup separado; remoção automática de fundo retirada.
+- Status, catálogo, orçamento, WhatsApp; pastas/subpastas, Logo da empresa, Artes prontas/cliente e bibliotecas Artes/Mockups.
+- Alerta +24h e prioridade visual das pendências.
 
-### v1.1 — Produção de arte
-- Recorte de prancheta transparente.
-- PNG 300 DPI.
-- Qualidade 4032/6000/8192.
-- Mockup separado.
-- Editar/excluir/renomear/download de arquivos.
-- Remoção automática de fundo retirada.
+### v2.0–v2.4 — Equipe, indicadores e estabilização
+- Admin/funcionários, autoria, responsável, Puxar pra mim, histórico, projetos recorrentes, Desistiu/Remarcado, faturamento e dashboard.
+- UF, empresas por estado, totais por cliente e vendedor na área pública.
+- Ajustes de RLS/Storage/auditoria/primeiro acesso.
+- Criado `PROJECT_MEMORY.md`; `Cotton` corrigido no catálogo.
+- Revertida compactação global que havia degradado o layout; visual anterior restaurado sem remover funções.
 
-### v1.2 — Comercial
-- Status configuráveis.
-- Catálogo de produtos.
-- Orçamentos e área pública do orçamento.
-- WhatsApp no card.
-
-### v1.3 — Organização
-- Pastas padrão, subpastas, Logo da empresa, Artes prontas e Artes enviadas pelo cliente.
-- Bibliotecas internas de Artes e Mockups.
-
-### v1.4 — Controle de atendimento
-- Alerta de 24h sem alteração de status.
-- Ordenação das empresas pendentes para o topo.
-- Destaque/WhatsApp para retorno.
-
-### v2.0 — Equipe e projetos
-- Administrador, funcionários e primeiro acesso.
-- Responsável atual, “Puxar pra mim” e autoria.
-- Histórico de ações.
-- Projetos recorrentes por empresa.
-- Desistiu e Remarcado.
-- Faturamento por camisa/estampa/total.
-- Dashboard de produtividade.
-
-### v2.1 — Indicadores
-- Estado/UF no cadastro.
-- Empresas por estado no dashboard.
-- Histórico de projetos e totais por cliente.
-- Vendedor responsável na área pública.
-
-### v2.2 — Correções incrementais
-- Ajustes de RLS da equipe e Storage.
-- Ajustes de auditoria e primeiro acesso.
-- Patch temporário de estado/histórico criado durante estabilização.
-
-### v2.3 — Estabilização visual e memória do projeto
-- Criado este arquivo canônico `PROJECT_MEMORY.md`.
-- Revisão completa dos requisitos antigos contra o código atual.
-- Identificados explicitamente os itens ainda pendentes: Google Drive e upload público do cliente.
-- Decisão de não reescrever o sistema inteiro durante a correção visual.
-- Remoção/neutralização de patch JavaScript redundante para evitar dupla execução.
-- Limpeza visual não destrutiva por CSS: menos poluição, melhor hierarquia, cards e filtros responsivos.
-- Fortalecimento da regra de não regressão e checklist de publicação.
-- Auditoria encontrou `Cotton` ausente do catálogo do banco; item foi cadastrado novamente e validado na ordem correta.
-
-### v2.4 — Restauração do layout aprovado
-- Causa: a compactação global do `team-patch.css` v2.3 sobrescreveu tamanhos do layout aprovado.
-- Correção: restauração do visual anterior e manutenção apenas de correções pontuais de overflow e estilos novos de UF/histórico.
-- Preservado: equipe, dashboard, status, WhatsApp, alerta 24h, orçamento, pastas, artes, mockups e projetos.
-- Banco e regras de negócio não alterados nesta versão.
-
-### v2.5 — Reconstrução usando o ZIP de layout aprovado
-- O usuário enviou um ZIP da fase em que o layout estava aprovado e pediu que ele passasse a ser a referência visual canônica.
-- Referência: `styles.css` do ZIP enviado, SHA-256 `1d7789662daaf1336d83e66615b2a97a3db808c4a5d878463f58c9f0e1956400`.
-- Conferência técnica: o `styles.css` atual contém integralmente essa base aprovada no início do arquivo; os estilos das funções posteriores são aditivos.
-- Causa do layout quebrado/sem estilo vista no celular: produção dependia de bundle comprimido e patches externos; o conteúdo do app podia renderizar sem a folha visual completa ficar aplicada.
-- Correção de emergência: `team-patch.css` passou a carregar o CSS completo baseado na referência aprovada, para impedir tela sem estilo no deploy atual.
-- Correção estrutural preparada: `index.html` autocontido com CSS e JavaScript completos, sem depender de `team-bundle.*`, `team-patch.css` ou `team-patch.js`.
-- Funcionalidades preservadas: empresas, editar/excluir, status, WhatsApp, alerta 24h, orçamento, pastas/subpastas, Logo da empresa, Artes prontas, Artes enviadas pelo cliente, bibliotecas Artes/Mockups, equipe, responsável, Puxar pra mim, auditoria, projetos, Remarcado, Desistiu, UF, produtividade e área do cliente.
-- Regra permanente: alterações visuais futuras partem desta base; não redesenhar globalmente o sistema para incluir função nova.
-- Testes feitos nesta etapa: `node --check app.js`; validação de presença do CSS de autenticação; confirmação de que o novo `index.html` não referencia chunks ou patches externos; comparação de hash/prefixo entre CSS aprovado e CSS atual.
-
-### v2.6 — Navegação imediata e preparação do logo oficial
-- Pedido: corrigir os botões **Equipe**, **Dashboard/Produtividade** e **Ver produtividade**, que alteravam a URL mas só renderizavam a tela depois de atualizar manualmente.
-- Causa identificada: o listener de `hashchange` foi registrado apontando para uma versão antiga de `renderRoute`; depois `renderRoute` foi substituída pelas rotas novas de Equipe/Produtividade, mas o navegador continuava chamando a função antiga já registrada.
-- Correção: o listener agora chama `renderRoute()` dinamicamente no momento do evento, então usa sempre a implementação atual.
-- Reforço: `nav()` agora também renderiza novamente quando o usuário toca em um botão que aponta para a rota em que ele já está.
-- Arquivos afetados: `app.js` e `index.html`. Nenhuma tabela, RLS ou regra de negócio foi alterada.
-- Layout: nenhuma mudança visual global nesta versão; manter integralmente a base aprovada v2.5.
-- Marca: usuário informou que o logo oficial usa o nome/zero escrito, não um numeral `0`. O placeholder atual `019` deve ser substituído somente quando o arquivo oficial do logo for enviado, sem redesenhar a interface.
-- Testes planejados/realizados: `node --check app.js`; conferir que o listener não referencia diretamente a função antiga; conferir metadado de versão 2.6; validar deploy antes de produção.
-
-### v2.7 — Estabilidade de carregamento, tempo de status e pastas legíveis
-- Pedido: corrigir a tela “Não foi possível carregar o sistema / Failed to fetch”, preservar o layout aprovado, mostrar há quanto tempo cada empresa está no status atual e parar de abreviar nomes de pastas.
-- Causa do “Failed to fetch”: a v2.6 foi publicada como um wrapper que buscava outra URL de deployment em tempo de execução. Essa dependência cross-deployment era frágil e podia falhar no navegador.
-- Correção estrutural: voltar ao `index.html` autocontido, com CSS e JavaScript do sistema dentro do próprio deploy. A produção não deve depender de buscar um deployment antigo para inicializar.
-- Navegação: manter a correção da v2.6 (`hashchange` chama a implementação atual de `renderRoute` e `nav()` rerenderiza a rota atual).
-- Tempo de status: toda empresa com status definido diferente de Finalizado mostra “Há Xh / X dias e Yh neste status”. O alerta especial de 24h continua separado e mantém prioridade visual/ordenação.
-- Área da empresa: o mesmo tempo de status aparece junto ao controle de status e atualiza a cada minuto sem recarregar a página.
-- Pastas: nomes passam a quebrar linha e reduzir levemente a tipografia quando necessário; não usar reticências para esconder o nome.
-- Layout: nenhuma mudança de identidade visual global; preservar a base canônica v2.5.
-- Arquivos afetados: `app.js`, `styles.css`, `index.html`, `PROJECT_MEMORY.md`. Nenhuma tabela, RLS ou regra de banco alterada.
-- Validações locais: `node --check app.js`; apenas uma definição ativa de `nav`, um listener de `hashchange`, uma implementação override final de `renderRoute` e uma implementação override final de `renderWorkspaceCards`; `index.html` sem referência ao deployment antigo; remoção automática de fundo continua ausente.
-- Limitação de teste: o container não resolve `esm.sh`, portanto a renderização autenticada completa precisa ser validada no preview/produção real; não declarar teste visual completo sem essa validação.
+### v2.5–v2.7 — Layout canônico, navegação e estabilidade
+- O ZIP de layout aprovado virou a referência visual canônica; `styles.css` de referência SHA-256 `1d7789662daaf1336d83e66615b2a97a3db808c4a5d878463f58c9f0e1956400`. Funções novas devem entrar sem redesign global.
+- Corrigida navegação de Equipe/Dashboard/Produtividade: `hashchange` chama a implementação atual de `renderRoute`; `nav()` rerenderiza a rota atual.
+- Placeholder `019` não é o logo oficial; substituir quando o arquivo oficial da Zero 19 for fornecido.
+- Corrigida arquitetura que buscava deployment Vercel antigo e gerava `Failed to fetch`; não voltar a depender de deployment antigo.
+- Empresas não finalizadas mostram tempo no status e alerta +24h; nomes de pastas quebram linha e não usam reticências.
+- Layout, orçamento, status, equipe, dashboard, artes, mockups e demais funções preservados.
 
 ### v2.8 — Biblioteca de vídeos de demonstração e WhatsApp
 - Pedido: criar um ambiente interno para guardar vídeos de demonstração de qualidade, organizar em pastas, baixar no celular/computador e encaminhar para clientes cadastrados pelo WhatsApp.
@@ -279,6 +203,18 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 - Validações locais: `node --check app.js`; payload do deploy v2.8 contém CSS e JavaScript atuais; `index.html` de produção não deve buscar outro deployment em tempo de execução; bucket confirmado com os MIME types de vídeo.
 - Regra: não publicar se a versão em preview voltar a mostrar `Failed to fetch` ou perder o layout canônico.
 
+### v2.9 — Preview público de demonstrações e envio múltiplo no WhatsApp
+- Pedido: concluir a recuperação do sistema em produção e evoluir a biblioteca de Vídeos.
+- Produção: remover definitivamente o carregador v2.6 que buscava outro deployment Vercel e causava `Failed to fetch`; primeiro foi publicada uma recuperação v2.8 baseada em chunks versionados no GitHub, sem dependência de deployment antigo. A publicação final v2.9 usa a base v2.8 versionada + patch v2.9 comprimido com fallback Raw GitHub/jsDelivr; deployment de produção `dpl_HCqqPnoUwvpKZvjYBVwusH8nQRts`.
+- Banco: `z19p_assets` recebeu `share_token` UUID único; criada RPC pública `z19p_get_public_video_demo(uuid)` que expõe somente dados necessários de vídeos da biblioteca de demonstrações.
+- Vídeos: cada demonstração agora possui nome + descrição para o cliente; descrição pode ser cadastrada no upload e alterada depois.
+- Compartilhamento: botão `Demonstrar` permite selecionar uma ou várias demonstrações e depois selecionar o cliente cadastrado.
+- WhatsApp: mensagem formatada com emoji, negrito, nome/descrição de cada demonstração e um link individual de preview.
+- Preview público: `demo.html?t=<share_token>` abre página responsiva Zero 19, reproduz o arquivo original em alta qualidade e oferece botão `Baixar vídeo`.
+- Segurança do preview: token não sequencial; a RPC pública retorna apenas ativos `asset_type=video` dentro do ambiente `library_videos`.
+- Preservado: layout canônico v2.5, Equipe, Dashboard, orçamento, status, alerta 24h, pastas completas, artes/mockups e demais funções anteriores.
+- Validações concluídas: `node --check app.js`; patch v2.9 aplicado localmente sobre a base v2.8 reproduz exatamente o `app.js`/CSS atuais; produção v2.9 está `READY`; raiz canônica responde 200; `demo.html` responde 200; RPC pública retorna `null` para token aleatório e não há `share_token` nulo.
+
 ## 9. Próxima versão
 
-Ao receber a próxima solicitação, criar **v2.9** neste arquivo antes de publicar e preservar o layout canônico v2.5/v2.7/v2.8.
+Ao receber a próxima solicitação, criar **v2.10** neste arquivo antes de publicar e preservar o layout canônico v2.5/v2.7/v2.8/v2.9.
