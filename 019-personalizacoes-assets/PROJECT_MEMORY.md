@@ -162,9 +162,10 @@ RLS da equipe e Storage, auditoria, primeiro acesso e patch temporário de estad
 - Criado este arquivo canônico.
 - Revisados todos os requisitos anteriores contra o código atual.
 - Pendências explicitadas: Google Drive e upload público do cliente.
-- Patch JavaScript redundante neutralizado.
+- Patch JavaScript redundante neutralizado para evitar dupla execução.
 - Limpeza visual por CSS sem remover funções.
 - Responsividade reforçada para filtros, cards, formulários, dashboard e mobile.
+- Auditoria encontrou `Cotton` ausente do catálogo do banco; item foi cadastrado novamente e validado na ordem correta.
 
 ## Próxima versão
 Na próxima solicitação, criar **v2.4** antes de publicar e registrar: pedido, arquivos/tabelas afetados, mudanças, testes e pendências.
