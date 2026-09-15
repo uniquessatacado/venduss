@@ -2,13 +2,22 @@
 
 > Arquivo canônico de continuidade. Antes de qualquer alteração futura, ler este arquivo inteiro, conferir a versão atual e atualizar a seção **Histórico de versões** antes de publicar.
 
-## Objetivo
-Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, artes, mockups, orçamentos, produção DTF, equipe, histórico e produtividade. Precisa funcionar bem no celular e no computador e servir também como ponte de arquivos entre os dois.
+## 1. Objetivo e identidade
 
-## Regras de não regressão
+Sistema interno da **Zero 19 / 019 Personalizações** para centralizar atendimento de empresas/clientes, artes, mockups, orçamentos, produção DTF, equipe, histórico e produtividade. Precisa funcionar bem no **celular e no computador** e também servir como ponte de arquivos entre os dois.
+
+- Nome do sistema: **019 Personalizações**.
+- Tema: escuro, laranja 019, visual limpo e profissional.
+- Administrador principal: **Clovis**.
+- Produção: `https://019-personalizacoes.vercel.app`.
+- Banco/Storage/Auth: Supabase já conectado.
+- Layout canônico: base do ZIP aprovado pelo usuário, preservada desde v2.5.
+
+## 2. Regras de não regressão
+
 1. Nunca remover função existente para incluir outra sem registrar e validar a substituição.
 2. Alterações visuais não podem quebrar banco, upload, orçamento, área pública, permissões ou equipe.
-3. Antes de publicar: validar sintaxe JavaScript, bundle, rotas principais e checklist desta memória.
+3. Antes de publicar: validar sintaxe JavaScript, rotas principais e checklist desta memória.
 4. Não reintroduzir remoção automática de fundo.
 5. Não reduzir imagem original quando qualidade estiver ativa; apenas ampliar quando necessário.
 6. Mockup não passa por recorte de prancheta nem ampliação automática.
@@ -18,15 +27,10 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 10. Toda publicação gera nova entrada no histórico de versões.
 11. Ajustes visuais devem ser cirúrgicos: não compactar globalmente topbar, títulos, cards, botões ou tipografia sem comparar com o layout aprovado anterior.
 12. Se uma alteração visual degradar a experiência, restaurar primeiro o último layout aprovado e só depois reaplicar a correção necessária isoladamente.
+13. O ZIP enviado pelo usuário na v2.5 é a referência visual principal. Função nova deve entrar dentro dessa linguagem visual, sem redesenhar o sistema inteiro.
+14. Antes de alterar navegação/rotas, conferir se existe implementação duplicada/override de `renderRoute`, `shell`, `renderDashboard` ou funções equivalentes.
 
-## Identidade e acesso
-- Nome: **019 Personalizações**.
-- Tema: escuro, laranja 019, visual limpo e profissional.
-- Administrador principal: **Clovis**.
-- Hospedagem: `https://019-personalizacoes.vercel.app`.
-- Banco/Storage/Auth: Supabase já conectado.
-
-## Requisitos consolidados
+## 3. Requisitos consolidados
 
 ### Empresas e atendimento
 - IMPLEMENTADO: criar, editar e excluir empresa.
@@ -100,82 +104,135 @@ Sistema interno da Zero 19 para centralizar atendimento de empresas/clientes, ar
 - IMPLEMENTADO: faturamento de camisas, estampas e total.
 - IMPLEMENTADO: resumo diário e histórico de atividades.
 
-## Arquitetura importante
+## 4. Arquitetura importante
+
 - Tabelas usam prefixo `z19p_`.
 - Storage usa bucket `z19p-assets`.
 - RLS permite equipe da mesma conta e preserva autoria.
 - Área pública usa RPC `z19p_get_public_workspace`.
 - Equipe usa Edge Function `z19p-team-admin`.
-- Evitar patches temporários duplicando lógica já presente no bundle principal.
+- `index.html` v2.5+ é autocontido: CSS + JavaScript da aplicação no próprio HTML para evitar tela sem estilo quando um patch externo falha.
+- `app.js` deve continuar espelhando a lógica principal do `index.html` para manutenção e validação de sintaxe.
+- Evitar patches temporários duplicando lógica já presente no app principal.
 - O patch `team-patch.js` ficou redundante depois que as mesmas funções passaram ao bundle principal; v2.3 o neutralizou.
-- `team-patch.css` deve ser somente aditivo e pontual; não deve redesenhar globalmente a aplicação.
+- `team-patch.css` não deve redesenhar globalmente a aplicação.
 
-## Checklist antes de publicar
-- node --check app.js
-- remoção automática de fundo não aparece na interface
-- login abre
-- dashboard sem overflow horizontal
-- filtro de status não sai da tela no mobile
-- card mostra status, responsável, WhatsApp e ações
-- editar/excluir empresa funciona
-- abrir empresa funciona
-- pastas/subpastas funcionam
-- upload de arte mantém recorte + qualidade
-- mockup não recebe tratamento de arte
-- editar/excluir/baixar arte funciona
-- orçamento salva e aparece na área pública
-- equipe/dashboard continuam acessíveis ao admin
-- área pública carrega vendedor, orçamento, mockups e artes
-- nenhuma alteração visual remove função existente
-- comparar desktop e mobile com o último layout aprovado antes de publicar CSS global
+## 5. Itens pendentes
 
-## Pendências priorizadas
 1. Google Drive: importar pasta recursivamente preservando subpastas e arquivos originais.
 2. Upload pelo cliente na área pública, se confirmado.
 3. Consolidar o `app.js` removendo overrides antigos após congelar comportamento com testes.
 4. Evoluir bucket público para privado + URLs assinadas quando for priorizada segurança de arquivo.
 5. Criar smoke tests automatizados das rotas e fluxos principais.
+6. Substituir o placeholder textual atual pelo **logo oficial da Zero 19** quando o arquivo oficial for enviado. O usuário informou que a marca usa o **zero escrito**, não o numeral `0` como representação do logo.
 
-## Histórico de versões
+## 6. Checklist obrigatório antes de publicar
+
+- [ ] `node --check app.js`
+- [ ] busca por opção de remoção automática de fundo deve retornar zero na interface
+- [ ] login abre normalmente
+- [ ] dashboard carrega sem overflow horizontal
+- [ ] filtro de status não sai da tela no mobile
+- [ ] card de empresa mostra status, responsável, WhatsApp e ações
+- [ ] editar/excluir empresa continua disponível
+- [ ] abrir empresa funciona
+- [ ] pastas/subpastas continuam funcionando
+- [ ] upload de arte mantém recorte/prancheta + opções de qualidade
+- [ ] mockup não é processado como arte
+- [ ] editar/excluir/baixar arte continua funcionando
+- [ ] orçamento abre, salva e aparece na área pública
+- [ ] Equipe abre ao clicar sem precisar atualizar a página
+- [ ] Dashboard/Produtividade abre ao clicar sem precisar atualizar a página
+- [ ] Ver produtividade no resumo diário abre ao clicar
+- [ ] área pública do cliente carrega vendedor, orçamento, mockups e artes
+- [ ] nenhuma alteração visual remove função já existente
+
+## 7. Histórico de versões
 
 ### v1.0 — Base
-Login, empresas, upload, Supabase, área do cliente e arquivos PNG.
+- Login, empresas, upload e armazenamento no Supabase.
+- Área do cliente e arquivos PNG.
 
 ### v1.1 — Produção de arte
-Recorte de prancheta; PNG 300 DPI; 4032/6000/8192; mockup separado; editar/excluir/renomear/download; remoção automática de fundo retirada.
+- Recorte de prancheta transparente.
+- PNG 300 DPI.
+- Qualidade 4032/6000/8192.
+- Mockup separado.
+- Editar/excluir/renomear/download de arquivos.
+- Remoção automática de fundo retirada.
 
 ### v1.2 — Comercial
-Status, catálogo, orçamento, área pública do orçamento e WhatsApp no card.
+- Status configuráveis.
+- Catálogo de produtos.
+- Orçamentos e área pública do orçamento.
+- WhatsApp no card.
 
 ### v1.3 — Organização
-Pastas padrão, subpastas, Logo da empresa, Artes prontas, Artes enviadas pelo cliente, bibliotecas de Artes e Mockups.
+- Pastas padrão, subpastas, Logo da empresa, Artes prontas e Artes enviadas pelo cliente.
+- Bibliotecas internas de Artes e Mockups.
 
 ### v1.4 — Controle de atendimento
-Alerta de 24h, ordenação das pendências para o topo e destaque/WhatsApp para retorno.
+- Alerta de 24h sem alteração de status.
+- Ordenação das empresas pendentes para o topo.
+- Destaque/WhatsApp para retorno.
 
 ### v2.0 — Equipe e projetos
-Administrador, funcionários, primeiro acesso, responsável atual, “Puxar pra mim”, auditoria, projetos recorrentes, Desistiu, Remarcado, faturamento e dashboard.
+- Administrador, funcionários e primeiro acesso.
+- Responsável atual, “Puxar pra mim” e autoria.
+- Histórico de ações.
+- Projetos recorrentes por empresa.
+- Desistiu e Remarcado.
+- Faturamento por camisa/estampa/total.
+- Dashboard de produtividade.
 
 ### v2.1 — Indicadores
-UF, empresas por estado, histórico de projetos, totais por cliente e vendedor na área pública.
+- Estado/UF no cadastro.
+- Empresas por estado no dashboard.
+- Histórico de projetos e totais por cliente.
+- Vendedor responsável na área pública.
 
 ### v2.2 — Correções incrementais
-RLS da equipe e Storage, auditoria, primeiro acesso e patch temporário de estado/histórico.
+- Ajustes de RLS da equipe e Storage.
+- Ajustes de auditoria e primeiro acesso.
+- Patch temporário de estado/histórico criado durante estabilização.
 
 ### v2.3 — Estabilização visual e memória do projeto
-- Criado este arquivo canônico.
-- Revisados todos os requisitos anteriores contra o código atual.
-- Pendências explicitadas: Google Drive e upload público do cliente.
-- Patch JavaScript redundante neutralizado para evitar dupla execução.
-- Foi aplicada uma compactação visual global por CSS; validação real mostrou que ela degradou o layout aprovado anterior.
-- Auditoria encontrou `Cotton` ausente do catálogo do banco; item foi cadastrado novamente.
+- Criado este arquivo canônico `PROJECT_MEMORY.md`.
+- Revisão completa dos requisitos antigos contra o código atual.
+- Identificados explicitamente os itens ainda pendentes: Google Drive e upload público do cliente.
+- Decisão de não reescrever o sistema inteiro durante a correção visual.
+- Remoção/neutralização de patch JavaScript redundante para evitar dupla execução.
+- Limpeza visual não destrutiva por CSS: menos poluição, melhor hierarquia, cards e filtros responsivos.
+- Fortalecimento da regra de não regressão e checklist de publicação.
+- Auditoria encontrou `Cotton` ausente do catálogo do banco; item foi cadastrado novamente e validado na ordem correta.
 
 ### v2.4 — Restauração do layout aprovado
-- Pedido: recuperar o visual anterior sem perder as funções novas.
-- Causa identificada: `team-patch.css` v2.3 sobrescreveu globalmente topbar, títulos, cards, botões, grids e tipografia com muitos `!important`.
-- Ação: retirar a compactação global e voltar o patch CSS ao papel original, apenas complementando blocos novos e o overflow do filtro de status.
-- Preservar integralmente: equipe, dashboard, UF, histórico, responsável, status, WhatsApp, alerta 24h, orçamento, pastas, artes e mockups.
-- Banco e regras de negócio não serão alterados nesta correção visual.
+- Causa: a compactação global do `team-patch.css` v2.3 sobrescreveu tamanhos do layout aprovado.
+- Correção: restauração do visual anterior e manutenção apenas de correções pontuais de overflow e estilos novos de UF/histórico.
+- Preservado: equipe, dashboard, status, WhatsApp, alerta 24h, orçamento, pastas, artes, mockups e projetos.
+- Banco e regras de negócio não alterados nesta versão.
 
-## Próxima versão
-Na próxima solicitação, criar **v2.5** antes de publicar e registrar: pedido, arquivos/tabelas afetados, mudanças, testes e pendências.
+### v2.5 — Reconstrução usando o ZIP de layout aprovado
+- O usuário enviou um ZIP da fase em que o layout estava aprovado e pediu que ele passasse a ser a referência visual canônica.
+- Referência: `styles.css` do ZIP enviado, SHA-256 `1d7789662daaf1336d83e66615b2a97a3db808c4a5d878463f58c9f0e1956400`.
+- Conferência técnica: o `styles.css` atual contém integralmente essa base aprovada no início do arquivo; os estilos das funções posteriores são aditivos.
+- Causa do layout quebrado/sem estilo vista no celular: produção dependia de bundle comprimido e patches externos; o conteúdo do app podia renderizar sem a folha visual completa ficar aplicada.
+- Correção de emergência: `team-patch.css` passou a carregar o CSS completo baseado na referência aprovada, para impedir tela sem estilo no deploy atual.
+- Correção estrutural preparada: `index.html` autocontido com CSS e JavaScript completos, sem depender de `team-bundle.*`, `team-patch.css` ou `team-patch.js`.
+- Funcionalidades preservadas: empresas, editar/excluir, status, WhatsApp, alerta 24h, orçamento, pastas/subpastas, Logo da empresa, Artes prontas, Artes enviadas pelo cliente, bibliotecas Artes/Mockups, equipe, responsável, Puxar pra mim, auditoria, projetos, Remarcado, Desistiu, UF, produtividade e área do cliente.
+- Regra permanente: alterações visuais futuras partem desta base; não redesenhar globalmente o sistema para incluir função nova.
+- Testes feitos nesta etapa: `node --check app.js`; validação de presença do CSS de autenticação; confirmação de que o novo `index.html` não referencia chunks ou patches externos; comparação de hash/prefixo entre CSS aprovado e CSS atual.
+
+### v2.6 — Navegação imediata e preparação do logo oficial
+- Pedido: corrigir os botões **Equipe**, **Dashboard/Produtividade** e **Ver produtividade**, que alteravam a URL mas só renderizavam a tela depois de atualizar manualmente.
+- Causa identificada: o listener de `hashchange` foi registrado apontando para uma versão antiga de `renderRoute`; depois `renderRoute` foi substituída pelas rotas novas de Equipe/Produtividade, mas o navegador continuava chamando a função antiga já registrada.
+- Correção: o listener agora chama `renderRoute()` dinamicamente no momento do evento, então usa sempre a implementação atual.
+- Reforço: `nav()` agora também renderiza novamente quando o usuário toca em um botão que aponta para a rota em que ele já está.
+- Arquivos afetados: `app.js` e `index.html`. Nenhuma tabela, RLS ou regra de negócio foi alterada.
+- Layout: nenhuma mudança visual global nesta versão; manter integralmente a base aprovada v2.5.
+- Marca: usuário informou que o logo oficial usa o nome/zero escrito, não um numeral `0`. O placeholder atual `019` deve ser substituído somente quando o arquivo oficial do logo for enviado, sem redesenhar a interface.
+- Testes realizados: `node --check app.js`; comparação direta contra v2.5 confirmou que `index.html` mudou apenas em versão e navegação/`hashchange`; listener antigo direto não permanece.
+
+## 8. Próxima versão
+
+Ao receber a próxima solicitação, criar **v2.7** neste arquivo antes de publicar e preservar o layout canônico v2.5/v2.6.
